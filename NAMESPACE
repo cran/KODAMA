@@ -1,8 +1,20 @@
 # Default NAMESPACE created by R
 # Remove the previous line if you edit this file
 
-# Export all names
-exportPattern(".")
+
+
 
 # Import all packages listed as Imports or Depends
-import("e1071","plsgenomics","class")
+#import("stats","Rcpp")
+#exportPattern("^[[:alpha:]]+")
+
+
+
+useDynLib(KODAMA)
+importFrom(Rcpp, evalCpp)
+importFrom("graphics", "plot", "points")
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
+importFrom("stats","cmdscale", "as.dist", "dist", "kmeans", "kruskal.test","median", "pnorm", "rnorm", "runif", "sd", "var")
+exportPattern(KODAMA,k.test,loads,mcplot,sammon_cpp,core_cpp,floyd,pls.double.cv,knn.double.cv,knn.kodama,pls.kodama,dinisurface,helicoid,spirals,swissroll,normalization,scaling,transformy)
+
+
