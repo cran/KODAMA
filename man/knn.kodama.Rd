@@ -63,6 +63,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  data=iris[,-5]
  labels=iris[,5]
  ss=sample(150,15)
+
  z=knn.kodama(data[-ss,], labels[-ss], data[ss,], k=5) 
  table(z[,5],labels[ss])
 }

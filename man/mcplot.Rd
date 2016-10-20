@@ -24,8 +24,8 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \seealso{\code{\link{KODAMA}}}
 
 \examples{
-# data=as.matrix(iris[,-5])
-# kk=KODAMA(data)
-# mcplot(kk)
+data=as.matrix(iris[,-5])
+kk=KODAMA(data)
+mcplot(kk)
 }
 

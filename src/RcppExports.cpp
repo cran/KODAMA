@@ -210,7 +210,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // corecpp
-List corecpp(arma::mat x, arma::mat xTdata, arma::ivec clbest, int Tcycle, int FUN, int fpar, arma::ivec constrain, NumericVector fix, bool shake, int proj);
+List corecpp(arma::mat x, arma::mat xTdata, arma::ivec clbest, const int Tcycle, int FUN, int fpar, arma::ivec constrain, NumericVector fix, bool shake, int proj);
 RcppExport SEXP KODAMA_corecpp(SEXP xSEXP, SEXP xTdataSEXP, SEXP clbestSEXP, SEXP TcycleSEXP, SEXP FUNSEXP, SEXP fparSEXP, SEXP constrainSEXP, SEXP fixSEXP, SEXP shakeSEXP, SEXP projSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
@@ -218,7 +218,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type xTdata(xTdataSEXP);
     Rcpp::traits::input_parameter< arma::ivec >::type clbest(clbestSEXP);
-    Rcpp::traits::input_parameter< int >::type Tcycle(TcycleSEXP);
+    Rcpp::traits::input_parameter< const int >::type Tcycle(TcycleSEXP);
     Rcpp::traits::input_parameter< int >::type FUN(FUNSEXP);
     Rcpp::traits::input_parameter< int >::type fpar(fparSEXP);
     Rcpp::traits::input_parameter< arma::ivec >::type constrain(constrainSEXP);

@@ -30,7 +30,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 # data(iris)
 # data=iris[,-5]
 # labels=iris[,5]
-# kk=KODAMA(data,FUN="PLS-DA",f.par=2)
+# kk=KODAMA(data,FUN="PLS-DA")
 # loads(kk)
 }
 

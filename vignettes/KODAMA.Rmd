@@ -445,9 +445,9 @@ Here, information of the last two examples are provided together.
 
 ## 6  Special Notes for Users Upgrading from Previous Version
 
-Version 1.0.0 has brought several fundamental changes to the architecture of the package. We tried to ensure backward compatibility with the previous version where possible. However, there are still some caveats the users should take into account. 
+Version 1.1 has brought several fundamental changes to the architecture of the package. We tried to ensure backward compatibility with the previous version where possible. However, there are still some caveats the users should take into account. 
 
-Users who upgrade to version 1.0.0 from the older version (0.0.1) should be aware that the package requires the new version of `Rcpp` and `RcppArmadillo ` packages. This issue can simply be solved by installing `Rcpp` and `RcppArmadillo` from CRAN using `install.packages("Rcpp")` and `install.packages("RcppArmadillo")`.
+Users who upgrade to version 1.1 from the older version (0.0.1) should be aware that the package requires the new version of `Rcpp` and `RcppArmadillo ` packages. This issue can simply be solved by installing `Rcpp` and `RcppArmadillo` from CRAN using `install.packages("Rcpp")` and `install.packages("RcppArmadillo")`.
 
 
 

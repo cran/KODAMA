@@ -1,28 +1,44 @@
 
-
-#include <RcppArmadilloExtensions/sample.h>
-#include <math.h>    // math routines
-#include "ANN/ANN.h"     // ANN library header
-#include <R.h>       // R header
-//#include <R_ext/Applic.h>
-#include "NN.h"
-#include "RcppArmadillo.h"
-
+#include <math.h>           // math routines
+#include "ANN/ANN.h"        // ANN library header
+#include "NN.h"             // ANN library header
+#include <R.h>              // R header
+#include "RcppArmadillo.h"  // RcppArmadillo library header
 
 #include <map>
 #include <vector>
 #include <iostream>
+
+
 using namespace std;
 using namespace Rcpp;
 
-#if !defined(ARMA_64BIT_WORD)  
-  #define ARMA_64BIT_WORD  
-#endif 
 
 
-#if !defined(ARMA_DEFAULT_OSTREAM)
-#define ARMA_DEFAULT_OSTREAM Rcpp::Rcout
-#endif
+
+
+// This function performs a random selection of the elements of a vector "yy".
+// The number of elements to select is defined by the variable "size".
+
+IntegerVector samplewithoutreplace(IntegerVector yy,int size){
+  IntegerVector xx(size);
+  int rest=yy.size();
+  int it;
+  for(int ii=0;ii<size;ii++){
+    it=unif_rand()*rest;
+    xx[ii]=yy[it];
+    yy.erase(it);
+    rest--;
+  }
+  return xx;
+}
+
+
+
+// function to perform the Sammon's Non-Linear Mapping.
+// The source code is from the R package MASS written by Brian Ripley, Bill Venables, 
+// Douglas M. Bates, Kurt Hornik, Albrecht Gebhardt, David Firth.
+// The maintainer is	Brian Ripley <ripley at stats.ox.ac.uk>
 
 void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
                double *stress, Sint *trace, double *aa, double *tol)
@@ -111,9 +127,6 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
       e = eprev;
       magic = magic * 0.2;
       if (magic > 1.0e-3) goto CORRECT;
-      //    if (*trace) {
-      //      Rprintf("stress after %3d iters: %7.5f\n", i - 1, e);
-      //    }
       break;
     }
     magic *= 1.5;
@@ -131,9 +144,6 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
     }
     
     if (i % 10 == 0) {
-      //     if (*trace) {
-      //        Rprintf("stress after %3d iters: %7.5f, magic = %5.3f\n", i, e, magic);
-      //      }
       if (e > epast - *tol)
         break;
       epast = e;
@@ -147,49 +157,10 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
 }
 
 
-int randomnumber(int mass){
-  
-  arma::vec xxx = arma::randu(1,1);
-  int xxxx=(xxx[0]*(mass-1))+1;
-  return xxxx;
-}
-
-IntegerVector samplewithoutreplace(IntegerVector yy,int size){
-  IntegerVector xx(size);
-  int rest=yy.size();
-  int it;
-  for(int ii=0;ii<size;ii++){
-    it=randomnumber(rest)-1;
-    xx[ii]=yy[it];
-    yy.erase(it);
-    rest--;
-  }
-  return xx;
-}
-
-
-// ===============================
-// NEAR NEIGHBOUR CLASSIFIER
-// ===============================
-//
-//
-// The function utilizes the Approximate Near Neighbor (ANN) C++ library, 
-// which can give the exact near neighbours or (as the name suggests) 
-// approximate near neighbours to within a specified error bound.  For more 
-// information on the ANN library please visit http://www.cs.umd.edu/~mount/ANN/.
-// 
-//   Bentley J. L. (1975), Multidimensional binary search trees used 
-//   for associative search. Communication ACM, 18:309-517.
-//   
-//   Arya S. and Mount D. M. (1993), Approximate nearest neighbor searching, 
-//   Proc. 4th Ann. ACM-SIAM Symposium on Discrete Algorithms (SODA'93), 271-280.
-//   
-//   Arya S., Mount D. M., Netanyahu N. S., Silverman R. and Wu A. Y (1998), An 
-//   optimal algorithm for approximate nearest neighbor searching, Journal of the
-//   ACM, 45, 891-923.
 
 arma::uvec which(LogicalVector x) {
   int a=std::accumulate(x.begin(),x.end(), 0.0);
+
   arma::uvec w(a);
   int counter=0;
   for(int i = 0; i < x.size(); i++) 
@@ -304,27 +275,33 @@ arma::imat knn_kodama_c(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k
   double *distances= new double[nn];
   arma::imat Ytest(NQ,k);
   get_NN_2Set(data,query,&D,&ND,&NQ,&k,&EPS,&SEARCHTYPE,&USEBDTREE,&SQRAD,nn_index,distances);
-  // arma::mat result(NQ,k);
   for(int j=0;j<NQ;j++){
-      int *lab= new int[k];
+    int *lab= new int[k];
     arma::ivec scale(maxlabel);
     scale.zeros();
     for(int i=0;i<k;i++){
+      
       lab[i]=label[nn_index[j*k+i]-1];
+      
       scale(lab[i]-1)=scale(lab[i]-1)+1;
+      
       
       int most_common=-1;
       int value=0;
       for(int h=0;h<maxlabel;h++){
         if(scale(h)>value){
           value=scale(h);
+          
           most_common=h;
         }
       }
       Ytest(j,i)=most_common+1;
     }
+    delete [] lab;
+    
 
   }
+  
   delete [] nn_index;
   delete [] distances;
   return Ytest;
@@ -353,15 +330,15 @@ arma::mat knn_kodama_r(arma::mat Xtrain,arma::vec Ytrain,arma::mat Xtest,int k) 
   double *distances= new double[nn];
   arma::mat Ytest(NQ,k);
   get_NN_2Set(data,query,&D,&ND,&NQ,&k,&EPS,&SEARCHTYPE,&USEBDTREE,&SQRAD,nn_index,distances);
-
   for(int j=0;j<NQ;j++){
-  double *lab= new double[k];
+    double *lab= new double[k];
     double media=0;
     for(int i=0;i<k;i++){
       lab[i]=label[nn_index[j*k+i]-1];
       media=media+lab[i];
       Ytest(j,i)=media/(i+1);
     }
+    delete [] lab;
   }
   delete [] nn_index;
   delete [] distances;
@@ -379,9 +356,7 @@ arma::mat samm_cpp(arma::mat x,arma::mat y,int k){
   int trace=1;
   double magic=0.2;
   double tol=0.0001;
-  
-  
-  
+
   VR_sammon(X, &nn, &k, Y, &niter,e, &trace, &magic, &tol);
   
   arma::mat result(nn,k);
@@ -397,53 +372,39 @@ arma::mat samm_cpp(arma::mat x,arma::mat y,int k){
 
 // [[Rcpp::export]]
 arma::ivec KNNCV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
+
   arma::ivec Ytest(x.n_rows);
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-//  IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-        
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
 
   int mm=constrain.size();
   arma::ivec fold(mm);
   for (int i=0; i<mm; i++) 
     fold[i]=v[constrain(i)-1]%10;
-  
-  
+
+
   
   for (int i=0; i<10; i++) {
-  
     arma::uvec w1,w9;
     arma::ivec temp;
     arma::mat Xtrain,Xtest;
     arma::ivec Ytrain;
+    
     w1=find(fold==i);
     w9=find(fold!=i);
-
-    
-    Ytrain=cl.elem(w9);////////////////
-    temp=unique(Ytrain);  //unique(cl(w1));
+    temp=unique(cl(w1));
     if(temp.size()>1){
       Xtrain=x.rows(w9);
       Xtest=x.rows(w1);
-      //Ytrain=cl.elem(w9);
+      Ytrain=cl.elem(w9);
       arma::imat temp69=knn_kodama_c(Xtrain,Ytrain,Xtest,k);
       Ytest.elem(w1)=temp69.col(k-1);
-      
-      
     }else{
-      for(unsigned int hh=0;hh<Ytest.size();hh++){
-      arma::uvec  hh_w1(1),hh_w9(1);
-      unsigned int h1=w1(hh);
-      unsigned int h9=w9(0);
-      hh_w1(0)=h1;
-      hh_w9(0)=h9;
-      Ytest.elem(hh_w1)=cl.elem(hh_w9);  ////////ho cambiato w1 con w9
-      }
+      Ytest.elem(w1)=cl.elem(w1);
+      
     }
-    
   }  
-  
   return Ytest;
 }
 
@@ -472,7 +433,6 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
   arma::mat X=Xtrain;
   
   
-  
   // X <- scale(Xtrain,center=TRUE,scale=FALSE)
   // Xtest <-scale(Xtest,center=mX)
   arma::mat mX=mean(Xtrain,0);
@@ -482,12 +442,9 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
   //Y=Ytrain
   arma::mat Y=Ytrain;
   
-  
-  
   // Y <- scale(Ytrain,center=TRUE,scale=FALSE)
   arma::mat mY=mean(Ytrain,0);
   Y.each_row()-=mY;
-  
   
   // S <- crossprod(X,Y)
   arma::mat S=trans(X)*Y;
@@ -534,10 +491,7 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
   arma::mat tt;
   arma::mat uu;
   arma::mat vv;
-  
-  
-  
-  
+
   // for(a in 1:ncomp){
   for (int a=0; a<ncomp; a++) {
     //qq<-svd(S)$v[,1]
@@ -545,8 +499,7 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
     
     svd_econ(svd_U,svd_s,svd_V,S,"left");
     rr=svd_U.col( 0 );
-    
-    
+ 
     // tt<-scale(X%*%rr,scale=FALSE)
     tt=X*rr; 
     arma::mat mtt=mean(tt,0);
@@ -577,15 +530,11 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
     if(a>0){
       //vv<-vv-VV%*%crossprod(VV,pp)
       vv-=VV*(trans(VV)*pp);
-      
-      
+
       //uu<-uu-TT%*%crossprod(TT,uu)
       uu-=TT*(trans(TT)*uu);
     }
-    
-    
-    
-    
+
     //vv <- vv/sqrt(sum(vv*vv))
     vv/=sqrt(sum(sum(vv%vv)));
     
@@ -599,22 +548,17 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
     QQ.col(a)=qq;
     VV.col(a)=vv;
     UU.col(a)=uu;
-    
-    
-    
+
     B.slice(a)=RR*trans(QQ);
-    
-    
+
     Ypred.slice(a)=Xtest*B.slice(a);
-    
   } 
   for (int a=0; a<ncomp; a++) {
     arma::mat temp1=Ypred.slice(a);
     temp1.each_row()+=mY;
     Ypred.slice(a)=temp1;
   }  
-  
-  
+
   arma::mat sli=Ypred.slice(ncomp-1);
   return sli;
   
@@ -680,10 +624,9 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
   int xsa_t = max(constrain);
   
   IntegerVector frame = seq_len(xsa_t);
-//  IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
 
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
+  
   
   int mm=constrain.size();
   arma::ivec fold(mm);
@@ -701,13 +644,12 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
     
     w1=find(fold==i);
     w9=find(fold!=i);
-    temp=unique(cl(w9));
-   
+    temp=unique(cl(w1));
     if(temp.size()>1){
       Xtrain=x.rows(w9);
       Xtest=x.rows(w1);
+      Ytrain=clmatrix.rows(w9);
       
-       Ytrain=clmatrix.rows(w9);
       
       
       Ytest.rows(w1)=pred_pls(Xtrain,Ytrain,Xtest,k);
@@ -715,22 +657,10 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
       
       
     }else{
-      for(unsigned int hh=0; hh<Ytest.n_cols;hh++){
-         arma::uvec  hh_w1(1),hh_w9(1);
-      unsigned int h1=w1(hh);
-      unsigned int h9=w9(0);
-      hh_w1(0)=h1;
-      hh_w9(0)=h9;
-        Ytest.rows(hh_w1)=clmatrix.rows(hh_w9);
-      }
-
+      Ytest.rows(w1)=clmatrix.rows(w1);
+      
     }
   }  
-  
-  
-  
-  
-  
   
   int mm2=constrain.size();
   arma::ivec pp(mm2);
@@ -748,26 +678,6 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
   }
   return pp;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -793,9 +703,7 @@ List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
   
   //X=Xtrain
   arma::mat X=Xtrain;
-  
-  
-  
+
   // X <- scale(Xtrain,center=TRUE,scale=FALSE)
   // Xtest <-scale(Xtest,center=mX)
   arma::mat mX=mean(Xtrain,0);
@@ -857,10 +765,7 @@ List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
   arma::mat tt;
   arma::mat uu;
   arma::mat vv;
-  
-  
-  
-  
+
   // for(a in 1:ncomp){
   for (int a=0; a<ncomp; a++) {
     //qq<-svd(S)$v[,1]
@@ -903,10 +808,7 @@ List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
       //uu<-uu-TT%*%crossprod(TT,uu)
       uu-=TT*(trans(TT)*uu);
     }
-    
-    
-    
-    
+
     //vv <- vv/sqrt(sum(vv*vv))
     vv/=sqrt(sum(sum(vv%vv)));
     
@@ -989,10 +891,9 @@ List optim_pls_cv(arma::mat x,arma::mat clmatrix,arma::ivec constrain,int ncomp)
   arma::mat Ytest(clmatrix.n_rows,clmatrix.n_cols);
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-//  IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
 
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
+  
   
   int mm=constrain.size();
   arma::ivec fold(mm);
@@ -1100,11 +1001,8 @@ List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncom
   arma::vec Ytest(clmatrix.size());
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-  //IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
-  
-  
+
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
   
   int mm=constrain.size();
   arma::ivec fold(mm);
@@ -1197,13 +1095,8 @@ List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int nco
   arma::ivec Ytest(clmatrix.size());
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-  //IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
-  
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
-  
-  
-  
+
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
   int mm=constrain.size();
   arma::ivec fold(mm);
   for (int i=0; i<mm; i++) 
@@ -1315,11 +1208,8 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
   arma::mat Ytest(clmatrix.n_rows,clmatrix.n_cols);
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-  //IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
-  
-  
+
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
   
   int mm=constrain.size();
   arma::ivec fold(mm);
@@ -1490,11 +1380,8 @@ List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int ve
   arma::vec Ytest(yy.size());
   int xsa_t = max(constrain);
   IntegerVector frame = seq_len(xsa_t);
-  //IntegerVector v=RcppArmadillo::sample<IntegerVector>(frame, xsa_t,FALSE, NumericVector::create() ) ;
-  
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
-  
-  
+
+  IntegerVector v=samplewithoutreplace(frame,xsa_t);
   int mm=constrain.size();
   arma::ivec fold(mm);
   for (int i=0; i<mm; i++) 
@@ -1699,21 +1586,30 @@ arma::mat my_i=mean(clmatrix,0);
 
 
 
+
+
+
+
 // [[Rcpp::export]]
 List corecpp(arma::mat x,
              arma::mat xTdata,
              arma::ivec clbest,
-             int Tcycle,
+             const int Tcycle,
              int FUN,
              int fpar,
              arma::ivec constrain,
              NumericVector fix,
              bool shake,
              int proj) {
+  
 
+  
   arma::ivec cvpred=clbest;
   arma::ivec cvpredbest;
-  if(FUN==1){  
+
+  
+
+  if(FUN==1){
     cvpredbest=KNNCV(x,clbest,constrain,fpar);
   }
   if(FUN==2){
@@ -1721,81 +1617,67 @@ List corecpp(arma::mat x,
   }
 
   double accbest;
-
   if (shake == FALSE) {
     accbest = accuracy(clbest,cvpredbest);
-
   }
   else {
     accbest = 0;
   }
+  
   bool success = FALSE;
   int j = 0;
+  
   //Inizialization of the vector to store the values of accuracy
- 
-  arma::vec vect_acc(Tcycle);
 
-  vect_acc.fill(-1);
-
+  double *vect_acc= new double[Tcycle];
+  for(int ii=0;ii<Tcycle;ii++){
+    vect_acc[ii]=-1;
+  }
+  
+    
   arma::ivec sup1= unique(constrain);
-
   int nconc=sup1.size();
   
   NumericVector constrain2=as<NumericVector>(wrap(constrain));
   NumericVector fix2=as<NumericVector>(wrap(fix));
-
+  
   while (j < Tcycle && !success) {
-
     Rcpp::checkUserInterrupt();
     j++;
-    arma::ivec cl = clbest; 
+    arma::ivec cl = clbest;
+    
     IntegerVector sup2=seq_len(nconc);
 
-//    IntegerVector temp=RcppArmadillo::sample<IntegerVector>(sup2,1,FALSE,NumericVector::create());
+    int nn_temp=(unif_rand()*nconc)+1;
+  
 
-//    IntegerVector ss=RcppArmadillo::sample<IntegerVector>(sup2,nn_temp,FALSE,NumericVector::create());  
-
-    int nn_temp=randomnumber(nconc);
     IntegerVector ss=samplewithoutreplace(sup2,nn_temp);
-    
 
-      
     for (int* k = ss.begin(); k != ss.end(); ++k) {
       LogicalVector sele=((constrain2 == *k) & (fix2!=1));
       double flag = std::accumulate(sele.begin(),sele.end(), 0.0);
       if (flag != 0) {
-
         arma::uvec whi=which(sele);
         arma::ivec uni=unique(cvpredbest.elem(whi));
-        
-        
-   //     IntegerVector soso=RcppArmadillo::sample<IntegerVector>(as<IntegerVector>(wrap(uni)),1,FALSE,NumericVector::create());
-        
+
         IntegerVector ss_uni=as<IntegerVector>(wrap(uni));
+
         int nn_uni=ss_uni.size();
-        int nn_t=randomnumber(nn_uni)-1;
+        int nn_t=unif_rand()*nn_uni;
         IntegerVector soso(1);
-        soso[0]=ss_uni[nn_t];
-        
-  //      int nn_temp=randomnumber(nconc);
-  //  IntegerVector ss=samplewithoutreplace(sup2,nn_temp);
-    
+        soso(0)=ss_uni(nn_t);   //Cambiato da soso[0]=ss_uni[nn_t]
         
         
         IntegerVector soso2=rep(soso,whi.size());
-        cl.elem(whi)=as<arma::ivec>(soso2);
 
+        cl.elem(whi)=as<arma::ivec>(soso2);
       }
     }
     if(FUN==1){
- 
       cvpred=KNNCV(x,cl,constrain,fpar);
-
     }
     if(FUN==2){
-
       cvpred=PLSDACV(x,cl,constrain,fpar);      
-
     }
     double accTOT= accuracy(cl,cvpred);
     if (accTOT > accbest) {
@@ -1803,18 +1685,26 @@ List corecpp(arma::mat x,
       clbest = cl;
       accbest = accTOT;
     }
-    vect_acc[j] = accbest;
+    
+    
+
+    vect_acc[j-1] = accbest;  //Cambiato da vect_acc[j] = accbest;
     if (accTOT == 1) 
       success = TRUE;
   }
   
-
   
-  ///////////////////////////////////////////////////////
+  
+  arma::vec vect_acc2(Tcycle);
+  vect_acc2.fill(0);
+  for(int ii=0;ii<Tcycle;ii++){
+    vect_acc2(ii)=vect_acc[ii];
+  }
+  
+  delete [] vect_acc;
   
   
   if(proj==2){
-
     arma::mat projmat;
     int mm2=xTdata.n_rows;
     arma::ivec pp(mm2); 
@@ -1840,14 +1730,14 @@ List corecpp(arma::mat x,
     }
     return List::create(Named("clbest") = clbest,
                         Named("accbest") = accbest,
-                        Named("vect_acc") = vect_acc,
+                        Named("vect_acc") = vect_acc2,
                         Named("vect_proj") = pp
     );
     
   }else{
     return List::create(Named("clbest") = clbest,
                         Named("accbest") = accbest,
-                        Named("vect_acc") = vect_acc
+                        Named("vect_acc") = vect_acc2
     );
   }
   
@@ -1876,7 +1766,6 @@ List another(arma::mat pptrain,arma::mat xtrain,
   int USEBDTREE=0;
   double SQRAD=0;
   int nn=NQ*kkk;
-
   int *nn_index= new int[nn];
   double *distances= new double[nn];
   get_NN_2Set(knndata,query,&D,&ND,&NQ,&kkk,&EPS,&SEARCHTYPE,&USEBDTREE,&SQRAD,nn_index,distances);
@@ -1937,10 +1826,8 @@ List another(arma::mat pptrain,arma::mat xtrain,
       }
     
     }
- 
   delete [] nn_index;
   delete [] distances;
-
   return List::create(Named("distances") = a,
                       Named("index") = b,
                       Named("pp") = best_pptest

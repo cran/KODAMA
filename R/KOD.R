@@ -66,7 +66,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
   
   for (k in 1:M) {
     setTxtProgressBar(pb, k)
-
+    
     #
     # Here a number of samples are selected randomly
     #
@@ -82,6 +82,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     Xconstrain_ssa=as.numeric(as.factor(Xconstrain[ssa]))
     Xconstrain_ssa_previous=Xconstrain[ssa]
     Xfix_ssa=Xfix[ssa]
+        
 
     if(is.null(W)){
       if(xsa<=200){
@@ -89,17 +90,21 @@ epsilon = 0.05,dims=2,landmarks=5000)
       }else{
         clust= as.numeric(kmeans(x,50)$cluster)
         tab=apply(table(clust,Xconstrain_ssa),2,which.max)
-        XW=as.numeric(as.factor(tab[as.character(Xconstrain_ssa)]))     
+        XW=as.numeric(as.factor(tab[as.character(Xconstrain_ssa)]))
+        
       }
     }else{
       XW=W[landpoints][ssa]
+    
       if (any(is.na(XW))) {
         if(xsa<=200){
+
           unw = unique(XW)
           unw = unw[-which(is.na(unw))]
           ghg = is.na(XW)
           nnew=length(unique(Xconstrain_ssa[ghg]))
           XW[ghg]=as.numeric(as.factor(Xconstrain_ssa[ghg]))+ length(unw)
+        
         }else{
           clust= as.numeric(kmeans(x,50)$cluster)
           tab=apply(table(clust,Xconstrain_ssa),2,which.max)
@@ -113,35 +118,27 @@ epsilon = 0.05,dims=2,landmarks=5000)
       }
     }
     clbest=XW
+    
     if(LMARK) {
       xTdata=Tdata[,sva]
     }else{
       xTdata=NULL
     }
+    
+
+    
+      
 
 
+    
+      
+    
     #############################################################################
     #                                                                           #
     #                                 CORE ALGORITHM                            #
     #                                                                           #
     #############################################################################
-
-
-  if(is.null(xTdata)){
-    xTdata=matrix(1,ncol=1,nrow=1)
-    proj=1
-  }else{
-    proj=2
-  }
-  matchFUN=pmatch(FUN[1],c("KNN","PLS-DA"))
-  
-  
-  
-
-yatta = corecpp(x, xTdata,clbest, Tcycle, matchFUN, f.par, Xconstrain_ssa, Xfix_ssa, shake,proj)
-
-
- #   yatta = core_cpp(x,xTdata,clbest,Tcycle,FUN,f.par,Xconstrain_ssa,Xfix_ssa,shake)
+    yatta = core_cpp(x,xTdata,clbest,Tcycle,FUN,f.par,Xconstrain_ssa,Xfix_ssa,shake)
 
     #############################################################################
     #############################################################################
@@ -342,7 +339,8 @@ core_cpp <- function(x,
   }
   matchFUN=pmatch(FUN[1],c("KNN","PLS-DA"))
   
-  corecpp(x, xTdata,clbest, Tcycle=20, matchFUN, fpar, constrain, fix, shake,proj)
+  out=corecpp(x, xTdata,clbest, Tcycle=20, matchFUN, fpar, constrain, fix, shake,proj)
+  return(out)
 }
 
 
