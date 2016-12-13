@@ -11,7 +11,10 @@ pls.double.cv(Xdata,
               Ydata,
               constrain=1:nrow(Xdata),
               compmax=min(c(ncol(Xdata),nrow(Xdata))),
-              perm.test=FALSE)
+              perm.test=FALSE,
+              optim=TRUE,
+              scaling = c("centering","autoscaling"),
+              times=100)
 }
 
 \arguments{
@@ -20,6 +23,9 @@ pls.double.cv(Xdata,
   \item{constrain}{a vector of \code{nrow(data)} elements. Sample with the same identifying constrain will be split in the training set or in the test set of cross-validation together.}
   \item{compmax}{the number of latent components to be used for classification.}
   \item{perm.test}{a classification vector.}
+  \item{optim}{if perform the optmization of the number of components.}
+  \item{scaling}{the scaling method to be used. Choices are "\code{centering}" or "\code{autoscaling}" (by default = "\code{centering}"). A partial string sufficient to uniquely identify the choice is permitted.}
+  \item{times}{number of cross-validations.}
 
 }
 
@@ -41,12 +47,11 @@ A list with the following components:
   \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22.
-\cr
-\cr
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
-\emph{Bioinformatics}. Submitted.
+\emph{Bioinformatics} 2016. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
 
 \author{Stefano Cacciatore}
@@ -59,7 +64,7 @@ data=iris[,-5]
 labels=iris[,5]
 pp=pls.double.cv(data,labels)
 print(pp$Q2Y)
-table(pp$Ypred,labels)
+table(pp$results[[1]]$Ypred,labels)
 
 #
 # data(MetRef)
@@ -69,7 +74,7 @@ table(pp$Ypred,labels)
 # u=scaling(u)$newXtrain
 # pp=pls.double.cv(u,as.factor(MetRef$donor))
 # print(pp$Q2Y)
-# table(pp$Ypred,MetRef$donor)
+# table(pp$results[[1]]$Ypred,MetRef$donor)
 #
 }
 

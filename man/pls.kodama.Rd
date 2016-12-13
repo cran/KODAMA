@@ -7,7 +7,14 @@
 \description{Partial Least Squares (PLS) regression for test set from training set.}
 
 \usage{
-pls.kodama(Xtrain, Ytrain, Xtest, ncomp) 
+pls.kodama(Xtrain, 
+           Ytrain, 
+           Xtest, 
+           Ytest = NULL, 
+           ncomp, 
+           scaling = c("centering","autoscaling"),
+           perm.test=FALSE,
+           times=100) 
 
 }
 
@@ -15,7 +22,11 @@ pls.kodama(Xtrain, Ytrain, Xtest, ncomp)
   \item{Xtrain}{a matrix of training set cases.}
   \item{Ytrain}{a classification vector.}
   \item{Xtest}{a matrix of test set cases.}
+  \item{Ytest}{a classification vector.}
   \item{ncomp}{the number of components to consider.}
+  \item{scaling}{the scaling method to be used. Choices are "\code{centering}" or "\code{autoscaling}" (by default = "\code{centering}"). A partial string sufficient to uniquely identify the choice is permitted.}
+  \item{perm.test}{a classification vector.}
+  \item{times}{a classification vector.}
 
 }
 
@@ -27,19 +38,17 @@ A list with the following components:
   \item{Q}{the (m x max(ncomp)) matrix containing the Y-loadings.}
   \item{T}{the (ntrain x max(ncomp)) matrix containing the X-scores (latent components)}
   \item{R}{the (p x max(ncomp)) matrix containing the weights used to construct the latent components.}
-  \item{meanX}{the p-vector containing the means of the columns of Xtrain.}
 
   }
 
   \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22.
-\cr
-\cr
-Cacciatore S, Tenori L, Luchinat C, Bennet PR, MacIntyre DA	\cr
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\cr	\cr
+Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
-\emph{Bioinformatics}. Submitted.
+\emph{Bioinformatics} 2016. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
 
 \author{Stefano Cacciatore}

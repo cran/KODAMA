@@ -5,19 +5,68 @@ floyd <- function(data) {
     .Call('KODAMA_floyd', PACKAGE = 'KODAMA', data)
 }
 
-knn.kodama <- function(Xtrain, Ytrain, Xtest, k){
+knn.kodama <- function(Xtrain, 
+                       Ytrain, 
+                       Xtest, 
+                       Ytest=NULL,
+                       k,                      
+                       scaling=c("centering","autoscaling"),
+                       perm.test=FALSE,
+                       times=100){
+  scal=pmatch(scaling,c("centering","autoscaling"))[1]
+  oo=list()
     Xtrain=as.matrix(Xtrain)
     Xtest=as.matrix(Xtest)
     if(is.factor(Ytrain)){
       lev=levels(Ytrain)
       Ytrain=as.matrix(as.numeric(Ytrain))
-      o=.Call('KODAMA_knn_kodama_c', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, k)
-      o=matrix(as.vector(factor(lev[o],levels=lev)),ncol=k)
+      o=.Call('KODAMA_knn_kodama_c', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, k,scal)
+      oo$Ypred=matrix(as.vector(factor(lev[o],levels=lev)),ncol=k)
+      
+      if(!is.null(Ytest)){
+        
+  
+          Ytest_trans=as.numeric(transformy(as.matrix(as.numeric(Ytest))))
+          Ypred_trans=as.numeric(transformy(o[,k]))
+
+          oo$Q2Y=1-sum(((Ytest_trans-Ypred_trans))^2)/sum((Ytest_trans-mean(Ytest_trans))^2)   
+          
+        if(perm.test){
+          v=NULL
+          for(i in 1:times){
+            
+            ss=sample(1:nrow(Xtrain))
+            Xtrain_permuted=Xtrain[ss,]
+            op=.Call('KODAMA_knn_kodama_r', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, k,scal)
+            Ypred_trans=as.numeric(transformy(op[,k]))
+            v[i]=1-sum(((Ytest_trans-Ypred_trans))^2)/sum((Ytest_trans-mean(Ytest_trans))^2)   
+            
+          }
+          oo$pval=sum(v>o$Q2Y)/times
+        }
+      }
     }else{
       Ytrain=as.matrix(Ytrain)
-      o=.Call('KODAMA_knn_kodama_r', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, k)
+      o=.Call('KODAMA_knn_kodama_r', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, k,scal)
+      oo$Ypred=o
+      if(!is.null(Ytest)){
+        oo$Q2Y=1-sum(((Ytest-oo$Ypred[,k]))^2)/sum((Ytest-mean(Ytest))^2)  
+        if(perm.test){
+          v=NULL
+          for(i in 1:times){
+            
+            ss=sample(1:nrow(Xtrain))
+            Xtrain_permuted=Xtrain[ss,]
+            op=.Call('KODAMA_knn_kodama_r', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, k,scal)
+            Ypred_permutated=op
+            v[i]=1-sum(((Ytest-Ypred_permutated))^2)/sum((Ytest-mean(Ytest))^2)
+            
+          }
+          oo$pval=sum(v>o$Q2Y)/times
+        }
+      }
     }
-    o
+    oo
 }
 
 samm_cpp <- function(x, y, k) {
@@ -36,31 +85,76 @@ PLSDACV <- function(x, cl, constrain, k) {
     .Call('KODAMA_PLSDACV', PACKAGE = 'KODAMA', x, cl, constrain, k)
 }
 
-pls.kodama <- function(Xtrain, Ytrain, Xtest, ncomp) {
+pls.kodama <- function(Xtrain, 
+                       Ytrain, 
+                       Xtest,
+                       Ytest=NULL,
+                       ncomp,                         
+                       scaling=c("centering","autoscaling"),
+                       perm.test=FALSE,
+                       times=100){
+  scal=pmatch(scaling,c("centering","autoscaling"))[1]
   Xtrain=as.matrix(Xtrain)
   Xtest=as.matrix(Xtest)
   nr=nrow(Xtest)
   if(is.factor(Ytrain)){
     lev=levels(Ytrain)
     Ytrain=transformy(Ytrain)
-    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp)
+    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp,scal)
     Ypred=matrix(nrow=nr,ncol=ncomp)
     for(i in 1:ncomp){
       t=apply(o$Ypred[,,i],1,which.max)
       Ypred[,i]=as.vector(factor(lev[t],levels=lev))
     }
     o$Ypred=Ypred
+    if(!is.null(Ytest)){
+      o$Q2Y=1-sum(((Ytest-Ypred[,ncomp]))^2)/sum((Ytest-mean(Ytest))^2)  
+      if(perm.test){
+        v=NULL
+        for(i in 1:times){
+          
+          ss=sample(1:nrow(Xtrain))
+          Xtrain_permuted=Xtrain[ss,]
+          op=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, ncomp,scal)
+          t=apply(op$Ypred[,,ncomp],1,which.max)
+          Ypred_permutated=as.vector(factor(lev[t],levels=lev))
+          v[i]=1-sum(((Ytest-Ypred_permutated))^2)/sum((Ytest-mean(Ytest))^2)
+          
+        }
+        o$pval=sum(v>o$Q2Y)/times
+      }
+      
+      
+    }
+    
   }else{
     Ytrain=as.matrix(Ytrain)
-    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp)
+    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp,scal)
     Ypred=matrix(nrow=nr,ncol=ncomp)
     for(i in 1:ncomp){
       Ypred[,i]=o$Ypred[,,i]
     }
     o$Ypred=Ypred
+    if(!is.null(Ytest)){
+      o$Q2Y=1-sum(((Ytest-Ypred[,ncomp]))^2)/sum((Ytest-mean(Ytest))^2)   
+      if(perm.test){
+        v=NULL
+        for(i in 1:times){
+          
+          ss=sample(1:nrow(Xtrain))
+          Xtrain_permuted=Xtrain[ss,]
+          op=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, ncomp,scal)
+          Ypred_permutated=op$Ypred[,,ncomp] 
+          v[i]=1-sum(((Ytest-Ypred_permutated))^2)/sum((Ytest-mean(Ytest))^2)
+          
+        }
+        o$pval=sum(v>o$Q2Y)/times
+      }
+    }
   }
   o
 }
+
 
 
 
@@ -80,23 +174,20 @@ optim_knn_C_cv <- function(x, clmatrix, constrain, ncomp) {
   .Call('KODAMA_optim_knn_c_cv', PACKAGE = 'KODAMA', x, clmatrix, constrain, ncomp)
 }
 
-double_pls_cv <- function(x, y, constrain, type, verbose, compmax) {
-  .Call('KODAMA_double_pls_cv', PACKAGE = 'KODAMA', x, y, constrain, type, verbose, compmax)
+double_pls_cv <- function(x, y, constrain, type, verbose, compmax,optim,scaling) {
+  .Call('KODAMA_double_pls_cv', PACKAGE = 'KODAMA', x, y, constrain, type, verbose, compmax,optim,scaling)
 }
 
-double_knn_cv <- function(x, yy, constrain, type, verbose, compmax) {
-  .Call('KODAMA_double_knn_cv', PACKAGE = 'KODAMA', x, yy, constrain, type, verbose, compmax)
+double_knn_cv <- function(x, yy, constrain, type, verbose, compmax,optim,scaling) {
+  .Call('KODAMA_double_knn_cv', PACKAGE = 'KODAMA', x, yy, constrain, type, verbose, compmax,optim,scaling)
 }
 
-fit_pls <- function(x, y, type) {
-    .Call('KODAMA_fit_pls', PACKAGE = 'KODAMA', x, y, type)
-}
 
 corecpp <- function(x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake, proj) {
     .Call('KODAMA_corecpp', PACKAGE = 'KODAMA', x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake, proj)
 }
 
 another <- function(pptrain, xtrain, xtest, res, Xlink, epsilon) {
-    .Call('KODAMA_another', PACKAGE = 'KODAMA', pptrain, xtrain, xtest, res, Xlink, epsilon)
+  .Call('KODAMA_another', PACKAGE = 'KODAMA', pptrain, xtrain, xtest, res, Xlink, epsilon)
 }
 

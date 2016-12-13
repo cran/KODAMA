@@ -7,7 +7,14 @@
 \description{k-nearest neighbour classification for a test set from a training set.}
 
 \usage{
-knn.kodama(Xtrain, Ytrain, Xtest, k) 
+knn.kodama(Xtrain, 
+           Ytrain, 
+           Xtest,
+           Ytest=NULL, 
+           k, 
+           scaling = c("centering","autoscaling"),
+           perm.test=FALSE,
+           times=100)
 
 }
 
@@ -15,7 +22,11 @@ knn.kodama(Xtrain, Ytrain, Xtest, k)
   \item{Xtrain}{a matrix of training set cases.}
   \item{Ytrain}{a classification vector.}
   \item{Xtest}{a matrix of test set cases.}
+  \item{Ytest}{a classification vector.}
   \item{k}{the number of nearest neighbors to consider.}
+  \item{scaling}{the scaling method to be used. Choices are "\code{centering}" or "\code{autoscaling}" (by default = "\code{centering}"). A partial string sufficient to uniquely identify the choice is permitted.}
+  \item{perm.test}{a classification vector.}
+  \item{times}{a classification vector.}
 
 }
 
@@ -46,11 +57,11 @@ An optimal algorithm for approximate nearest neighbor searching\cr
 
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22.	\cr	\cr
-
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
-\emph{Bioinformatics}. Submitted.
+\emph{Bioinformatics} 2016. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
 
 
@@ -65,6 +76,6 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  ss=sample(150,15)
 
  z=knn.kodama(data[-ss,], labels[-ss], data[ss,], k=5) 
- table(z[,5],labels[ss])
+ table(z$Ypred[,5],labels[ss])
 }
 \keyword{cross-validation}

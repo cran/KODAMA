@@ -1,13 +1,33 @@
 
 #include <math.h>           // math routines
-#include "ANN/ANN.h"        // ANN library header
-#include "NN.h"             // ANN library header
-#include <R.h>              // R header
-#include "RcppArmadillo.h"  // RcppArmadillo library header
-
 #include <map>
 #include <vector>
 #include <iostream>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+#include "svm.h"
+
+#include "ANN/ANN.h"        // ANN library header
+#include "NN.h"             // ANN library header
+#include "svm.h"             // ANN library header
+#include <R.h>              // R header
+#include "RcppArmadillo.h"  // RcppArmadillo library header
+
+
+
+#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
+
+struct svm_parameter param;     // set by parse_command_line
+struct svm_problem prob;        // set by read_problem
+struct svm_model *model;
+struct svm_node *x_space;
+
+
+
 
 
 using namespace std;
@@ -194,13 +214,15 @@ arma::mat variance(arma::mat x) {
 }
 
 
-List scalecpp1(arma::mat Xtrain,arma::mat Xtest){
+List scalecpp(arma::mat Xtrain,arma::mat Xtest,int type){
   arma::mat mX=mean(Xtrain,0);
   Xtrain.each_row()-=mX;
   Xtest.each_row()-=mX;
-  arma::mat vX=variance(Xtrain);  
-  Xtrain.each_row()/=vX;
-  Xtest.each_row()/=vX;  
+  arma::mat vX=variance(Xtrain); 
+  if(type==2){
+    Xtrain.each_row()/=vX;
+    Xtest.each_row()/=vX;  
+  }
   return List::create(
     Named("Xtrain") = Xtrain,
     Named("Xtest")   = Xtest,
@@ -208,16 +230,6 @@ List scalecpp1(arma::mat Xtrain,arma::mat Xtest){
     Named("sd")       = vX
   ) ;
 }
-
-
-arma::mat scalecpp2(arma::mat Xtrain){
-  arma::mat mX=mean(Xtrain,0);
-  Xtrain.each_row()-=mX;
-  arma::mat vX=variance(Xtrain);  
-  Xtrain.each_row()/=vX;
-  return Xtrain;
-}
-
 
 
 
@@ -232,32 +244,7 @@ double accuracy(arma::ivec cl,arma::ivec cvpred){
   
 }
 
-
-// [[Rcpp::export]]
-arma::mat floyd(arma::mat data){
-  int n=data.n_cols;
-  int i,j,k;
-  double temp;
-  arma::mat A=data;
-  for (i=0; i<n; i++)
-    A(i,i) = 0;           
-  for (k=0; k<n; k++)
-    for (i=0; i<n; i++)
-      for (j=0; j<n; j++){
-        temp=A(i,k)+A(k,j);
-        if (temp < A(i,j))
-        {
-          A(i,j) = temp;
-          
-        }
-      }
-      return A;
-}
-
-
-
-// [[Rcpp::export]]
-arma::imat knn_kodama_c(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k) {
+arma::imat knn_kodama(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k) {
   arma::ivec cla=unique(Ytrain);
   int maxlabel=max(Ytrain);
   double* data = Xtrain.memptr();
@@ -299,7 +286,84 @@ arma::imat knn_kodama_c(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k
     }
     delete [] lab;
     
+    
+  }
+  
+  delete [] nn_index;
+  delete [] distances;
+  return Ytest;
+}
 
+
+
+// [[Rcpp::export]]
+arma::mat floyd(arma::mat data){
+  int n=data.n_cols;
+  int i,j,k;
+  double temp;
+  arma::mat A=data;
+  for (i=0; i<n; i++)
+    A(i,i) = 0;           
+  for (k=0; k<n; k++)
+    for (i=0; i<n; i++)
+      for (j=0; j<n; j++){
+        temp=A(i,k)+A(k,j);
+        if (temp < A(i,j))
+        {
+          A(i,j) = temp;
+          
+        }
+      }
+      return A;
+}
+
+
+
+// [[Rcpp::export]]
+arma::imat knn_kodama_c(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k,int scaling) {
+  List temp0=scalecpp(Xtrain,Xtest,scaling);
+  arma::mat Xtrain1=temp0[0];
+  arma::mat Xtest1=temp0[1];
+  arma::ivec cla=unique(Ytrain);
+  int maxlabel=max(Ytrain);
+  double* data = Xtrain1.memptr();
+  int *label=Ytrain.memptr();
+  double* query = Xtest1.memptr();
+  int D=Xtrain1.n_cols;
+  int ND=Xtrain1.n_rows;
+  int NQ=Xtest1.n_rows;
+  double EPS=0;
+  int SEARCHTYPE=1;
+  int USEBDTREE=0;
+  double SQRAD=0;
+  int nn=NQ*k;
+  int *nn_index= new int[nn];
+  double *distances= new double[nn];
+  arma::imat Ytest(NQ,k);
+  get_NN_2Set(data,query,&D,&ND,&NQ,&k,&EPS,&SEARCHTYPE,&USEBDTREE,&SQRAD,nn_index,distances);
+  for(int j=0;j<NQ;j++){
+    int *lab= new int[k];
+    arma::ivec scale(maxlabel);
+    scale.zeros();
+    for(int i=0;i<k;i++){
+      
+      lab[i]=label[nn_index[j*k+i]-1];
+      
+      scale(lab[i]-1)=scale(lab[i]-1)+1;
+      
+      
+      int most_common=-1;
+      int value=0;
+      for(int h=0;h<maxlabel;h++){
+        if(scale(h)>value){
+          value=scale(h);
+          
+          most_common=h;
+        }
+      }
+      Ytest(j,i)=most_common+1;
+    }
+    delete [] lab;
   }
   
   delete [] nn_index;
@@ -309,18 +373,18 @@ arma::imat knn_kodama_c(arma::mat Xtrain,arma::ivec Ytrain,arma::mat Xtest,int k
 
 
 // [[Rcpp::export]]
-arma::mat knn_kodama_r(arma::mat Xtrain,arma::vec Ytrain,arma::mat Xtest,int k) {
-//  arma::ivec cla=unique(Ytrain);
+arma::mat knn_kodama_r(arma::mat Xtrain,arma::vec Ytrain,arma::mat Xtest,int k,int scaling) {
+  List temp0=scalecpp(Xtrain,Xtest,scaling);
+  arma::mat Xtrain1=temp0[0];
+  arma::mat Xtest1=temp0[1];
   
-//  int maxlabel=max(Ytrain);
-  
-  double* data = Xtrain.memptr();
+  double* data = Xtrain1.memptr();
   double *label=Ytrain.memptr();
-  double* query = Xtest.memptr();
+  double* query = Xtest1.memptr();
   
   int D=Xtrain.n_cols;
-  int ND=Xtrain.n_rows;
-  int NQ=Xtest.n_rows;
+  int ND=Xtrain1.n_rows;
+  int NQ=Xtest1.n_rows;
   double EPS=0;
   int SEARCHTYPE=1;
   int USEBDTREE=0;
@@ -398,7 +462,7 @@ arma::ivec KNNCV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
       Xtrain=x.rows(w9);
       Xtest=x.rows(w1);
       Ytrain=cl.elem(w9);
-      arma::imat temp69=knn_kodama_c(Xtrain,Ytrain,Xtest,k);
+      arma::imat temp69=knn_kodama(Xtrain,Ytrain,Xtest,k);
       Ytest.elem(w1)=temp69.col(k-1);
     }else{
       Ytest.elem(w1)=cl.elem(w1);
@@ -589,31 +653,6 @@ arma::mat transformy(arma::ivec y){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // [[Rcpp::export]]
 arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
   
@@ -685,30 +724,37 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
 
 
 // [[Rcpp::export]]
-List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
+List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp,int scaling) {
+  
+  
+  
+  List temp0=scalecpp(Xtrain,Xtest,scaling);
+  arma::mat Xtrain1=temp0[0];
+  arma::mat Xtest1=temp0[1];
   
   // n <-dim(Xtrain)[1]
-  int n = Xtrain.n_rows;
+  int n = Xtrain1.n_rows;
   
   // p <-dim(Xtrain)[2]
-  int p = Xtrain.n_cols;
+  int p = Xtrain1.n_cols;
   
   // m <- dim(Y)[2]
   int m = Ytrain.n_cols;
   
   // w <-dim(Xtest)[1]
-  int w = Xtest.n_rows;
+  int w = Xtest1.n_rows;
   
   // arma::mat mm=a*b;
   
   //X=Xtrain
-  arma::mat X=Xtrain;
+  arma::mat X=Xtrain1;
 
   // X <- scale(Xtrain,center=TRUE,scale=FALSE)
   // Xtest <-scale(Xtest,center=mX)
-  arma::mat mX=mean(Xtrain,0);
-  X.each_row()-=mX;
-  Xtest.each_row()-=mX;
+//  arma::mat mX=mean(Xtrain1,0);
+//  X.each_row()-=mX;
+//  Xtest.each_row()-=mX;
+//superfluo  
   
   //Y=Ytrain
   arma::mat Y=Ytrain;
@@ -860,8 +906,7 @@ List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
     Named("P")       = PP,
     Named("Q")       = QQ,
     Named("T")       = TT,
-    Named("R")       = RR,
-    Named("meanX")   = mX
+    Named("R")       = RR
   );
 }
 
@@ -880,7 +925,7 @@ int unic(arma::mat x){
 
 
 // [[Rcpp::export]]
-List optim_pls_cv(arma::mat x,arma::mat clmatrix,arma::ivec constrain,int ncomp) {
+List optim_pls_cv(arma::mat x,arma::mat clmatrix,arma::ivec constrain,int ncomp, int scaling) {
   
   int nsamples=x.n_rows;
   int nvar=x.n_cols;
@@ -913,18 +958,16 @@ List optim_pls_cv(arma::mat x,arma::mat clmatrix,arma::ivec constrain,int ncomp)
       
       Xtest=x.rows(w1);
       Ytrain=clmatrix.rows(w9);
-      List temp0=scalecpp1(Xtrain,Xtest);
-      arma::mat Xtrain1=temp0[0];
-      arma::mat Xtest1=temp0[1];
-      List pls=pls_kodama(Xtrain1,Ytrain,Xtest1,ncomp);
+
+      List pls=pls_kodama(Xtrain,Ytrain,Xtest,ncomp,scaling);
       arma::cube temp1=pls[1];
       for(int ii=0;ii<w1_size;ii++)  for(int jj=0;jj<ncomp;jj++)  for(int kk=0;kk<ncolY;kk++)  Ypred(w1[ii],kk,jj)=temp1(ii,kk,jj);  
     }else{
       for(int ii=0;ii<w1_size;ii++)  for(int jj=0;jj<ncomp;jj++)  for(int kk=0;kk<ncolY;kk++)  Ypred(w1[ii],kk,jj)=clmatrix(w1[0],kk);  
     }
   }  
-  arma::mat x_scaled=scalecpp2(x);
-  List pls2=pls_kodama(x_scaled,clmatrix,x_scaled,ncomp);
+
+  List pls2=pls_kodama(x,clmatrix,x,ncomp,scaling);
   
   arma::cube BB  =pls2[0];
   arma::cube Yfit=pls2[1];
@@ -994,7 +1037,7 @@ List optim_pls_cv(arma::mat x,arma::mat clmatrix,arma::ivec constrain,int ncomp)
 
 
 // [[Rcpp::export]]
-List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncomp) {
+List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncomp,int scaling) {
   int nsamples=x.n_rows;
   ncomp=min(ncomp,nsamples);
   arma::mat Ypred(nsamples,ncomp); 
@@ -1028,10 +1071,8 @@ List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncom
       if(a==2){ 
         Xtrain=x.rows(w9);
         Xtest=x.rows(w1);
-        List temp0=scalecpp1(Xtrain,Xtest);
-        arma::mat Xtrain1=temp0[0];
-        arma::mat Xtest1=temp0[1];
-        arma::mat knn=knn_kodama_r(Xtrain1,Ytrain,Xtest1,ncomp);
+
+        arma::mat knn=knn_kodama_r(Xtrain,Ytrain,Xtest,ncomp,scaling);
         for(int ii=0;ii<w1_size;ii++)  
           for(int jj=0;jj<ncomp;jj++)  
             Ypred(w1[ii],jj)=knn(ii,jj);  
@@ -1040,8 +1081,8 @@ List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncom
         
       }
   }  
-  arma::mat x_scaled=scalecpp2(x);
-  arma::mat Yfit=knn_kodama_r(x_scaled,clmatrix,x_scaled,ncomp);
+  
+  arma::mat Yfit=knn_kodama_r(x,clmatrix,x,ncomp,scaling);
   arma::mat res_pred(nsamples,ncomp),res_fit(nsamples,ncomp);
   arma::vec Q2Y(ncomp);
   arma::vec R2Y(ncomp);
@@ -1088,7 +1129,7 @@ List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncom
 
 
 // [[Rcpp::export]]
-List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int ncomp) {
+List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int ncomp,int scaling) {
   int nsamples=x.n_rows;
   ncomp=min(ncomp,nsamples);
   arma::imat Ypred(nsamples,ncomp); 
@@ -1121,10 +1162,8 @@ List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int nco
       if(a==2){ 
         Xtrain=x.rows(w9);
         Xtest=x.rows(w1);
-        List temp0=scalecpp1(Xtrain,Xtest);
-        arma::mat Xtrain1=temp0[0];
-        arma::mat Xtest1=temp0[1];
-        arma::imat knn=knn_kodama_c(Xtrain1,Ytrain,Xtest1,ncomp);
+
+        arma::imat knn=knn_kodama_c(Xtrain,Ytrain,Xtest,ncomp,scaling);
         for(int ii=0;ii<w1_size;ii++)  
           for(int jj=0;jj<ncomp;jj++)  
             Ypred(w1[ii],jj)=knn(ii,jj);  
@@ -1133,8 +1172,8 @@ List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int nco
         
       }
   }  
-  arma::mat x_scaled=scalecpp2(x);
-  arma::imat Yfit=knn_kodama_c(x_scaled,clmatrix,x_scaled,ncomp);
+
+  arma::imat Yfit=knn_kodama_c(x,clmatrix,x,ncomp,scaling);
   arma::mat res_pred(nsamples,ncomp),res_fit(nsamples,ncomp);
   arma::vec Q2Y(ncomp);
   arma::vec R2Y(ncomp);
@@ -1184,7 +1223,7 @@ List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int nco
 
 
 // [[Rcpp::export]]
-List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int verbose,int compmax) {
+List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int verbose,int compmax, int opt, int scaling) {
   if(verbose==2) Rcpp::Rcout<<".";
   
   arma::mat clmatrix;
@@ -1231,17 +1270,18 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
       arma::ivec constrain_train=constrain(w9);
       Xtest=x.rows(w1);
       Ytrain=clmatrix.rows(w9);
-      List temp0=scalecpp1(Xtrain,Xtest);
-      arma::mat Xtrain1=temp0[0];
-      arma::mat Xtest1=temp0[1];
-      
-      List optim=optim_pls_cv(Xtrain1,Ytrain,constrain_train,ncomp);
-      best_comp=optim[0];
+
+      if(opt==1){
+        List optim=optim_pls_cv(Xtrain,Ytrain,constrain_train,ncomp,scaling);
+        best_comp=optim[0];
+      }else{
+        best_comp=ncomp;
+      }
       
       mean_nc+=best_comp;
       if(verbose==1) Rcpp::Rcout<<"Number of component selected (loop #"<<i+1<<"): "<<best_comp<<"\n";
       
-      List pls=pls_kodama(Xtrain1,Ytrain,Xtest1,best_comp);
+      List pls=pls_kodama(Xtrain,Ytrain,Xtest,best_comp,scaling);
       arma::cube temp1=pls[1];
       
       
@@ -1256,13 +1296,16 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
     }
     
   }  
-  arma::mat x_scaled=scalecpp2(x);
+
+
+  List optimALL=optim_pls_cv(x,clmatrix,constrain,ncomp,scaling);
+  int b_comp=optimALL[0];
   
-  
-  int b_comp=round(mean_nc/n_nc);
   if(verbose==1) Rcpp::Rcout<<"Number of component selected for R2y calculation: "<<b_comp<<"\n";
   
-  List pls2=pls_kodama(x_scaled,clmatrix,x_scaled,b_comp);
+  List pls2=pls_kodama(x,clmatrix,x,b_comp,scaling);
+
+  
   
   arma::cube BB    = pls2[0];
   arma::cube temp2 = pls2[1];
@@ -1333,7 +1376,7 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
   
   if(b_comp==1){
     
-    List pls3=pls_kodama(x_scaled,clmatrix,x_scaled,2);
+    List pls3=pls_kodama(x,clmatrix,x,2,scaling);
     
     arma::cube BB2    = pls3[0];
     arma::mat  PP2    = pls3[2];
@@ -1357,7 +1400,8 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
     Named("P")     = PP,
     Named("Q")     = QQ,
     Named("T")     = TT,
-    Named("R")     = RR
+    Named("R")     = RR,
+    Named("bcomp") = b_comp
   ) ;
   
   
@@ -1369,7 +1413,7 @@ List double_pls_cv(arma::mat x,arma::mat y,arma::ivec constrain,int type,int ver
 
 
 // [[Rcpp::export]]
-List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int verbose,int compmax) {
+List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int verbose,int compmax, int opt, int scaling) {
   
   if(verbose==2) Rcpp::Rcout<<".";
   
@@ -1417,37 +1461,51 @@ List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int ve
       arma::ivec constrain_train=constrain(w9);
       Xtest=x.rows(w1);
         
-      List temp0=scalecpp1(Xtrain,Xtest);
-      arma::mat Xtrain1=temp0[0];
-      arma::mat Xtest1=temp0[1];
+
       List optim;
       arma::mat knn;
       if(type==1){
         arma::ivec iYtrain=as<arma::ivec>(wrap(Ytrain));
-        optim=optim_knn_c_cv(Xtrain1,iYtrain,constrain_train,ncomp);
-        best_comp=optim[0];
+        if(opt==1){
+          optim=optim_knn_c_cv(Xtrain,iYtrain,constrain_train,ncomp,scaling);
+          best_comp=optim[0];
+        }else{
+          best_comp=ncomp;
+        }
         mean_nc+=best_comp;
         if(verbose==1) Rcpp::Rcout<<"Number of k selected (loop #"<<i+1<<"): "<<best_comp<<"\n";
-        arma::imat iknn=knn_kodama_c(Xtrain1,iYtrain,Xtest1,best_comp);
+        arma::imat iknn=knn_kodama_c(Xtrain,iYtrain,Xtest,best_comp,scaling);
         knn=as<arma::mat>(wrap(iknn));
       }
       if(type==2){
-        optim=optim_knn_r_cv(Xtrain1,Ytrain,constrain_train,ncomp);
+        optim=optim_knn_r_cv(Xtrain,Ytrain,constrain_train,ncomp,scaling);
         best_comp=optim[0];
         mean_nc+=best_comp;
         if(verbose==1) Rcpp::Rcout<<"Number of k selected (loop #"<<i+1<<"): "<<best_comp<<"\n";
-        knn=knn_kodama_r(Xtrain1,Ytrain,Xtest1,best_comp);
+        knn=knn_kodama_r(Xtrain,Ytrain,Xtest,best_comp,scaling);
       }
       for(int ii=0;ii<w1_size;ii++)  Ypred(w1[ii])=knn(ii,best_comp-1);  
       n_nc++;
     }else{
-      if(verbose==1) Rcpp::Rcout<<"Number of component selected (loop #"<<i+1<<"): "<<"NA\n";
+      if(verbose==1) Rcpp::Rcout<<"Number of k selected (loop #"<<i+1<<"): "<<"NA\n";
       for(int ii=0;ii<w1_size;ii++) Ypred(w1[ii])=yy(w1[0]);  
     }
   }
   
-  arma::mat x_scaled=scalecpp2(x);
-  int b_comp=round(mean_nc/n_nc);
+
+  
+  List optimALL;
+  
+  if(type==2)
+    optimALL=optim_knn_r_cv(x,yy,constrain,ncomp,scaling);
+  if(type==1){
+    arma::ivec iyy=as<arma::ivec>(wrap(yy));
+    optimALL=optim_knn_c_cv(x,iyy,constrain,ncomp,scaling);
+    
+  }
+
+  int b_comp=optimALL[0];
+  
   if(verbose==1) Rcpp::Rcout<<"Number of k selected for R2y calculation: "<<b_comp<<"\n";
   arma::vec Yfit(nsamples); 
   double Q2Y;
@@ -1456,7 +1514,7 @@ List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int ve
   
   if(type==1){
     arma::ivec iY=as<arma::ivec>(wrap(yy));
-    arma::imat iknn2=knn_kodama_c(x_scaled,iY,x_scaled,b_comp);
+    arma::imat iknn2=knn_kodama_c(x,iY,x,b_comp,scaling);
     knn2=as<arma::mat>(wrap(iknn2));
     for(int ii=0;ii<nsamples;ii++) Yfit(ii)=knn2(ii,b_comp-1);  
     arma::mat ymatrix=transformy(iY);
@@ -1485,7 +1543,7 @@ List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int ve
   }
   
   if(type==2){
-    knn2=knn_kodama_r(x_scaled,yy,x_scaled,b_comp);
+    knn2=knn_kodama_r(x,yy,x,b_comp,scaling);
     for(int ii=0;ii<nsamples;ii++) Yfit(ii)=knn2(ii,b_comp-1);  
     arma::vec mYpred=yy;
     double my_i=mean(yy);
@@ -1514,76 +1572,10 @@ List double_knn_cv(arma::mat x,arma::vec yy,arma::ivec constrain,int type,int ve
     Named("Yfit")  = Yfit,
     Named("Ypred") = Ypred,
     Named("Q2Y")   = Q2Y,
-    Named("R2Y")   = R2Y
+    Named("R2Y")   = R2Y,
+    Named("bk") = b_comp
   ) ;
 }
-
-
-/////////////////////////////////////////////
-
-
-
-
-// [[Rcpp::export]]
-double fit_pls(arma::mat x,arma::mat y,int type) {
-  arma::mat clmatrix;
-  arma::ivec cl;
-  arma::vec cl_sup;
-  if(type==1){
-    cl=as<arma::ivec>(wrap(y));
-    clmatrix=transformy(cl);
-  }
-  if(type==2){
-    clmatrix=y;
-  }
-  int nsamples=x.n_rows;
-  int nvar=x.n_cols;
-  int ncomp=min(nsamples,nvar);
-  
-  int ncolY=clmatrix.n_cols;
-  arma::mat Ypred(nsamples,ncolY); 
-  arma::mat Ytest(clmatrix.n_rows,clmatrix.n_cols);
-
-
-
-  
-  arma::mat x_scaled=scalecpp2(x);
-  List pls2=pls_kodama(x_scaled,clmatrix,x_scaled,ncomp);
-  
-  arma::cube temp2 = pls2[1];
-
-  
-  arma::mat Yfit(nsamples,ncolY); 
-  for(int ii=0;ii<nsamples;ii++)  for(int kk=0;kk<ncolY;kk++)  Yfit(ii,kk)=temp2(ii,kk,ncomp-1);  
-  
-  arma::vec res_pred(nsamples),res_fit(nsamples);
-  double R2Y;
-  
-  
-//  arma::mat mYpred=Ypred;
-arma::mat mYpred=clmatrix;
-//  arma::mat my_i=mean(Ypred,0);
-arma::mat my_i=mean(clmatrix,0);
-  mYpred.each_row()-=my_i;
-  double PRESSQ=0,TSS=0,PRESSR=0;
-  for(int k=0;k<ncolY;k++){
-    for(int j=0;j<nsamples;j++){
-      double arg_TQ=(Ypred(j,k)-clmatrix(j,k));
-      PRESSQ+=arg_TQ*arg_TQ;
-      double arg_TR=(Yfit(j,k)-clmatrix(j,k));
-      PRESSR+=arg_TR*arg_TR;
-      TSS+=mYpred(j,k)*mYpred(j,k);
-    }
-  }
-
-  R2Y=1-PRESSR/TSS;
-
-  return R2Y;
-}
-
-
-
-
 
 
 
@@ -1709,7 +1701,7 @@ List corecpp(arma::mat x,
     int mm2=xTdata.n_rows;
     arma::ivec pp(mm2); 
     if(FUN==1){
-      arma::imat temp70=knn_kodama_c(x,clbest,xTdata,fpar);
+      arma::imat temp70=knn_kodama(x,clbest,xTdata,fpar);
       pp=temp70.col(fpar-1);
     }
     if(FUN==2){
@@ -1742,10 +1734,6 @@ List corecpp(arma::mat x,
   }
   
 }
-
-
-
-
 
 
 // [[Rcpp::export]]
@@ -1835,7 +1823,6 @@ List another(arma::mat pptrain,arma::mat xtrain,
   
   
 }
-
 
 
 

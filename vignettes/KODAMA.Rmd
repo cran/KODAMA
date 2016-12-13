@@ -28,7 +28,7 @@ This documentation introduces the usage of KODAMA. More information are availabl
 
 ### 2.1 Installation via CRAN
 
-The R package KODAMA (current version 1.0.0) is part of the Comprehensive R Archive Network (CRAN)^[http://cran.r-project.org]. The simplest way to install the package is to enter the following command into your R session: `install.packages("KODAMA")`. We suggest to install the R package `rgl` for the data visualization in 3D interactive plots.
+The R package KODAMA (current version 1.1) is part of the Comprehensive R Archive Network (CRAN)^[http://cran.r-project.org]. The simplest way to install the package is to enter the following command into your R session: `install.packages("KODAMA")`. We suggest to install the R package `rgl` for the data visualization in 3D interactive plots.
 
 ### 2.2 Manual installation from source
 

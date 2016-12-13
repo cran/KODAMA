@@ -62,7 +62,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
   whF = which(!Xfix)
   whT = which(Xfix)
   FUN_SAM = FUN_SAM - length(whT)
-  pb <- txtProgressBar(min = 0, max = M, style = 1)
+  pb <- txtProgressBar(min = 1, max = M, style = 1)
   
   for (k in 1:M) {
     setTxtProgressBar(pb, k)
@@ -72,7 +72,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     #
     sva = sample(nva, FUN_VAR, FALSE, NULL)
     ssa = c(whT, sample(whF, FUN_SAM, bagging, NULL))
-#ssa=1:873
+
     #
     # Here the selection of variables and samples of landmark datapoints is performed
     #   
@@ -84,10 +84,35 @@ epsilon = 0.05,dims=2,landmarks=5000)
     Xfix_ssa=Xfix[ssa]
         
 
+    ###################################
+    del_n=rep(NA,nrow(x))
+    for(ik in 1:(nrow(x)-1)){
+      if(is.na(del_n[ik])){
+        
+        del_n[ik]=ik
+        
+        for(ij in 2:nrow(x)){
+          if(all(x[ik,]==x[ij,])) del_n[ij]=ik
+        }
+        
+        
+        
+      }
+    }
+    if(is.na(del_n[nrow(x)])) del_n[nrow(x)]=nrow(x)
+    
+    
+    xsa_same_point=length(unique(del_n))
+    #####################################
+    
+    
+    
+    
     if(is.null(W)){
-      if(xsa<=200){
+      if(xsa_same_point<=200 || length(unique(x))<50){
         XW=Xconstrain_ssa
       }else{
+        
         clust= as.numeric(kmeans(x,50)$cluster)
         tab=apply(table(clust,Xconstrain_ssa),2,which.max)
         XW=as.numeric(as.factor(tab[as.character(Xconstrain_ssa)]))
@@ -97,7 +122,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
       XW=W[landpoints][ssa]
     
       if (any(is.na(XW))) {
-        if(xsa<=200){
+        if(xsa_same_point<=200 || length(unique(x))<50){
 
           unw = unique(XW)
           unw = unw[-which(is.na(unw))]
@@ -242,10 +267,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
 
 
 
-  
-  
-  
-  
+
   
 # This function performs a permutation test to assess association between the 
 # KODAMA output and any additional related parameters such as clinical metadata.
@@ -253,26 +275,19 @@ epsilon = 0.05,dims=2,landmarks=5000)
 k.test = function (data, labels, n = 100) 
 {
   data=as.matrix(data)
-  if(is.factor(labels)){
-    lev=levels(labels)
-    Q2Y=try(fit_pls(data,as.matrix(as.numeric(labels)),1),silent = TRUE)
-    v=NULL
-    for(i in 1:n){
-      ss=sample(1:nrow(data))
-      v[i]=try(fit_pls(data,as.matrix(as.numeric(labels)[ss]),1),silent = TRUE)
-    }
-    pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
-  }else{
-    Q2Y=try(fit_pls(data,as.matrix(labels),2),silent = TRUE)
-    pval=NULL
-    v=NULL
-    for(i in 1:n){
-      ss=sample(1:nrow(data))
-      v[i]=try(fit_pls(data,as.matrix(labels[ss]),2),silent = TRUE)
-    }
-    
-    pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+  compmax=min(dim(data))
+  option=as.numeric(is.factor(labels))
+  w_R2Y=NULL
+  for(i in 1:n){
+    w_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels)),1:nrow(data),option,2,compmax,1,1)$R2Y
   }
+  v_R2Y=NULL
+  for(i in 1:n){
+    ss=sample(1:nrow(data))
+    v_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels[ss])),1:nrow(data),option,2,compmax,1,1)$R2Y
+  }
+  pval=wilcox.test(w_R2Y,v_R2Y,alternative = "greater")$p.value
+ 
   pval
 }
 
@@ -349,95 +364,205 @@ core_cpp <- function(x,
 
 
 
-pls.double.cv = function(Xdata,Ydata,constrain=1:nrow(Xdata),compmax=min(c(ncol(Xdata),nrow(Xdata))),perm.test=FALSE){
+pls.double.cv = function(Xdata,
+                         Ydata,
+                         constrain=1:nrow(Xdata),
+                         compmax=min(c(ncol(Xdata),nrow(Xdata))),
+                         perm.test=FALSE,
+                         optim=TRUE,
+                         scaling=c("centering","autoscaling"),
+                         times=100){
+
+  
+  scal=pmatch(scaling,c("centering","autoscaling"))[1]
+  optim=as.numeric(optim)
   Xdata=as.matrix(Xdata)
   constrain=as.numeric(as.factor(constrain))
+  res=list()
+  Q2Y=NULL
+  R2Y=NULL
+  bcomp=NULL
   if(is.factor(Ydata)){
     lev=levels(Ydata)
-    o=double_pls_cv(Xdata,as.matrix(as.numeric(Ydata)),constrain,1,1,compmax)
-    o$conf=table(o$Ypred,Ydata)
-    o$acc=(sum(diag(o$conf))*100)/length(Ydata)
-    Q2Y=o$Q2Y
-    pval=NULL
+    
+
+    for(j in 1:times){
+
+      o=double_pls_cv(Xdata,as.matrix(as.numeric(Ydata)),constrain,1,2,compmax,optim,scal)
+      bcomp[j]=o$bcomp
+      o$Ypred=factor(lev[o$Ypred],levels=lev)
+      o$conf=table(o$Ypred,Ydata)
+      o$acc=(sum(diag(o$conf))*100)/length(Ydata)
+      o$Yfit=factor(lev[o$Yfit],levels=lev)
+      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,T,T)^2)
+      Q2Y[j]=o$Q2Y
+      R2Y[j]=o$R2Y
+      res$results[[j]]=o
+    }
     if(perm.test){
+
       v=NULL
-      pb <- txtProgressBar(min = 0, max = 100, style = 1)
+   
+      for(i in 1:times){
+
+        ss=sample(1:nrow(Xdata))
+        v[i]=double_pls_cv(Xdata[ss,],as.matrix(as.numeric(Ydata)),constrain,1,2,compmax,optim,scal)$Q2Y
+      }
+  #    pval=pnorm(o$Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
       
-      for(i in 1:100){
-        setTxtProgressBar(pb, 1)
-        ss=sample(1:nrow(Xdata))
-        v[i]=double_pls_cv(Xdata[ss,],as.matrix(as.numeric(Ydata)),constrain,1,2,compmax)$Q2Y
-      }
-      pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
     }
-    o$Ypred=factor(lev[o$Ypred],levels=lev)
-    o$Yfit=factor(lev[o$Yfit],levels=lev)
-    o$p.value=pval
-    o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,T,T)^2)
+
+    res$Q2Y=Q2Y
+    res$R2Y=R2Y
+    res$medianR2Y=median(R2Y)
+    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
+    res$medianQ2Y=median(Q2Y)
+    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
+    res$bcomp=median(bcomp,na.rm = T)
   }else{
-    o=double_pls_cv(Xdata,as.matrix(Ydata),constrain,2,1,compmax)
-    o$Yfit=as.numeric(o$Yfit)
-    o$Ypred=as.numeric(o$Ypred)
-    Q2Y=o$Q2Y
+
+    for(j in 1:times){
+
+      o=double_pls_cv(Xdata,as.matrix(Ydata),constrain,2,2,compmax,optim,scal)
+      bcomp[j]=o$bcomp
+      o$Yfit=as.numeric(o$Yfit)
+      o$Ypred=as.numeric(o$Ypred)
+      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,T,T)^2)
+      Q2Y[j]=o$Q2Y
+      R2Y[j]=o$R2Y
+      res$results[[j]]=o
+    }
+    
     pval=NULL
     if(perm.test){
+
       v=NULL
-      for(i in 1:100){
+      for(i in 1:times){
         ss=sample(1:nrow(Xdata))
-        v[i]=double_pls_cv(Xdata[ss,],as.matrix(Ydata),constrain,2,2,compmax)$Q2Y
+        v[i]=double_pls_cv(Xdata[ss,],as.matrix(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
       }
-      pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+  #    pval=pnorm(o$Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value
     }
-    o$p.value=pval
+    res$Q2Y=Q2Y
+    res$Q2Y=Q2Y
+    res$R2Y=R2Y
+    res$medianR2Y=median(R2Y)
+    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
+    res$medianQ2Y=median(Q2Y)
+    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
+    res$bcomp=median(bcomp,na.rm = T)
   }
-  o
+  res
 }
 
 
 
 
 
-knn.double.cv = function(Xdata,Ydata,constrain=1:nrow(Xdata),compmax=min(c(ncol(Xdata),nrow(Xdata))),perm.test=FALSE){
+knn.double.cv = function(Xdata,
+                         Ydata,
+                         constrain=1:nrow(Xdata),
+                         compmax=min(c(ncol(Xdata),nrow(Xdata))),
+                         perm.test=FALSE,
+                         optim=TRUE,
+                         scaling=c("centering","autoscaling"),
+                         times=100){
+
+  scal=pmatch(scaling,c("centering","autoscaling"))[1]
+  optim=as.numeric(optim)
   Xdata=as.matrix(Xdata)
   constrain=as.numeric(as.factor(constrain))
+  
+  res=list()
+  Q2Y=NULL
+  R2Y=NULL
+  bk=NULL
+  
   if(is.factor(Ydata)){
     lev=levels(Ydata)
-    o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,1,1,compmax)
-    o$conf=table(o$Ypred,Ydata)
-    o$acc=(sum(diag(o$conf))*100)/length(Ydata)
-    Q2Y=o$Q2Y
-    pval=NULL
-    if(perm.test){
-      v=NULL
-      pb <- txtProgressBar(min = 0, max = 100, style = 1)
+
+    for(j in 1:times){
+
+      o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,1,2,compmax,optim,scal)
+      o$conf=table(o$Ypred,Ydata)
+      o$acc=(sum(diag(o$conf))*100)/length(Ydata)
+      o$Yfit=factor(lev[o$Yfit],levels=lev)
+      o$Ypred=factor(lev[o$Ypred],levels=lev)
+      Q2Y[j]=o$Q2Y
+      R2Y[j]=o$R2Y
+      bk[j]=o$bk
+      res$results[[j]]=o
       
-      for(i in 1:100){
-        setTxtProgressBar(pb, 1)
-        ss=sample(1:nrow(Xdata))
-        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,1,2,compmax)$Q2Y
-      }
-      pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      
+
     }
-    o$Ypred=factor(lev[o$Ypred],levels=lev)
-    o$Yfit=factor(lev[o$Yfit],levels=lev)
-    o$p.value=pval
-  }else{
-    o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,2,1,compmax)
-    o$Yfit=as.numeric(o$Yfit)
-    o$Ypred=as.numeric(o$Ypred)
-    Q2Y=o$Q2Y
     pval=NULL
     if(perm.test){
+
       v=NULL
-      for(i in 1:100){
+
+      for(i in 1:times){
+
         ss=sample(1:nrow(Xdata))
-        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,2,2,compmax)$Q2Y
+        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,1,2,compmax,optim,scal)$Q2Y
       }
-      pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      
     }
-    o$p.value=pval
+    
+    res$Q2Y=Q2Y
+    res$R2Y=R2Y
+    res$medianR2Y=median(R2Y)
+    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
+    res$medianQ2Y=median(Q2Y)
+    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
+    res$bk=median(bk,na.rm = T)
+    
+    
+  
+  }else{
+
+    for(j in 1:times){
+ 
+      o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,2,2,compmax,optim,scal)
+      o$Yfit=as.numeric(o$Yfit)
+      o$Ypred=as.numeric(o$Ypred)
+      Q2Y[j]=o$Q2Y
+      R2Y[j]=o$R2Y
+      bk[j]=o$bk
+      res$results[[j]]=o
+    }
+    pval=NULL
+    if(perm.test){
+
+      v=NULL
+
+      for(i in 1:times){
+
+        ss=sample(1:nrow(Xdata))
+        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
+      }
+    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      
+    }
+    
+    res$Q2Y=Q2Y
+    res$R2Y=R2Y
+    res$medianR2Y=median(R2Y)
+    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
+    res$medianQ2Y=median(Q2Y)
+    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
+    res$bk=median(bk,na.rm = T)
   }
-  o
+  res
 }
 
 
