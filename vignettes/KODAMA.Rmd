@@ -449,11 +449,28 @@ Version 1.1 has brought several fundamental changes to the architecture of the p
 
 Users who upgrade to version 1.1 from the older version (0.0.1) should be aware that the package requires the new version of `Rcpp` and `RcppArmadillo ` packages. This issue can simply be solved by installing `Rcpp` and `RcppArmadillo` from CRAN using `install.packages("Rcpp")` and `install.packages("RcppArmadillo")`.
 
+## 7  Errors and Solutions
+
+### 7.1  Rcpp, RcppArmadillo and OS X Mavericks "-lgfortran" and "-lquadmath" error
+
+Compiling the source R package, we reported the following error:
+
+    ld: warning: directory not found for option '-L/usr/local/lib/gcc/x86_64-apple-darwin13.0.0/4.8.2'
+    ld: library not found for -lquadmath
+    clang: error: linker command failed with exit code 1 (use -v to see invocation)
+    make: *** [KODAMA.so] Error 1
+    ERROR: compilation failed for package ‘KODAMA’
+    * removing ‘/Users/dmacinty/Library/R/3.3/library/KODAMA’
+
+Mainly, R for OS X Maverick was compiled using gfortran-4.8. The Solution is to go to the optional libraries, frameworks and applications for Mac OS X on r.research.att.com and download gfortran-4.8.2-darwin13.tar.bz2. Extract the package in ~/, which is root. The files should be unpacked into /usr/local/…
+
+Alternatively, open terminal and type:
+
+    curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2
+    sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C /
 
 
-
-
-## 7  How to Cite this Package
+## 8  How to Cite this Package
 
 Cacciatore S, Tenori L, Luchinat C, Bennett P, and MacIntyre DA. KODAMA: an updated R package for knowledge discovery and data mining.	Bioinformatics. Submitted.
 
@@ -469,7 +486,7 @@ To obtain BibTex entries of the two references, you can enter the following into
 
 
 
-## 8  References
+## 9  References
 
 
 Cacciatore S, Luchinat C, Tenori L (2014) Knowledge discovery by accuracy maximization. \emph{Proc Natl Acad Sci USA},111, 5117-22.

@@ -1,15 +1,17 @@
+#define R_NO_REMAP
 
-#include <math.h>           // math routines
 #include <map>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
+//#include <math.h>           // math routines
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include "svm.h"
+
 
 #include "ANN/ANN.h"        // ANN library header
 #include "NN.h"             // ANN library header
@@ -502,8 +504,7 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
   arma::mat mX=mean(Xtrain,0);
   X.each_row()-=mX;
   Xtest.each_row()-=mX;
-  
-  //Y=Ytrain
+
   arma::mat Y=Ytrain;
   
   // Y <- scale(Ytrain,center=TRUE,scale=FALSE)
@@ -721,44 +722,39 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
 
 
 
-
-
 // [[Rcpp::export]]
 List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp,int scaling) {
+  // X <- scale(Xtrain,center=TRUE,scale=FALSE)
+  // Xtest <-scale(Xtest,center=mX)
   
-  
-  
-  List temp0=scalecpp(Xtrain,Xtest,scaling);
-  arma::mat Xtrain1=temp0[0];
-  arma::mat Xtest1=temp0[1];
+  arma::mat mX=mean(Xtrain,0);
+  Xtrain.each_row()-=mX;
+  Xtest.each_row()-=mX;
+  arma::mat vX=variance(Xtrain); 
+  if(scaling==2){
+    Xtrain.each_row()/=vX;
+    Xtest.each_row()/=vX;  
+  }
   
   // n <-dim(Xtrain)[1]
-  int n = Xtrain1.n_rows;
+  int n = Xtrain.n_rows;
   
   // p <-dim(Xtrain)[2]
-  int p = Xtrain1.n_cols;
+  int p = Xtrain.n_cols;
   
   // m <- dim(Y)[2]
   int m = Ytrain.n_cols;
   
   // w <-dim(Xtest)[1]
-  int w = Xtest1.n_rows;
+  int w = Xtest.n_rows;
   
   // arma::mat mm=a*b;
   
   //X=Xtrain
-  arma::mat X=Xtrain1;
-
-  // X <- scale(Xtrain,center=TRUE,scale=FALSE)
-  // Xtest <-scale(Xtest,center=mX)
-//  arma::mat mX=mean(Xtrain1,0);
-//  X.each_row()-=mX;
-//  Xtest.each_row()-=mX;
-//superfluo  
+  arma::mat X=Xtrain;
   
   //Y=Ytrain
   arma::mat Y=Ytrain;
-  
   
   
   // Y <- scale(Ytrain,center=TRUE,scale=FALSE)
