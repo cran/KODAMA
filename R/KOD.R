@@ -272,24 +272,41 @@ epsilon = 0.05,dims=2,landmarks=5000)
 # This function performs a permutation test to assess association between the 
 # KODAMA output and any additional related parameters such as clinical metadata.
 
-k.test = function (data, labels, n = 100) 
-{
-  data=as.matrix(data)
-  compmax=min(dim(data))
-  option=as.numeric(is.factor(labels))
-  w_R2Y=NULL
-  for(i in 1:n){
-    w_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels)),1:nrow(data),option,2,compmax,1,1)$R2Y
+#k.test = function (data, labels, n = 100) 
+#{
+#  data=as.matrix(data)
+#  compmax=min(dim(data))
+#  option=2-as.numeric(is.factor(label))
+#  w_R2Y=NULL
+#  for(i in 1:n){
+#    w_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels)),1:nrow(data),option,2,compmax,1,1)$R2Y
+#  }
+#  v_R2Y=NULL
+#  for(i in 1:n){
+#    ss=sample(1:nrow(data))
+#    v_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels[ss])),1:nrow(data),option,2,compmax,1,1)$R2Y
+#  }
+#  pval=wilcox.test(w_R2Y,v_R2Y,alternative = "greater")$p.value
+#  pval
+#}
+k.test = 
+  function (data, labels, n = 100) 
+  {
+    data = as.matrix(data)
+    compmax = min(dim(data))
+    option = 2 - as.numeric(is.factor(labels))
+    
+    w_R2Y = pls.double.cv(data, labels, 1:nrow(data),compmax = 2,perm.test = FALSE,times = 1,runn=1)$medianR2Y
+    
+    v_R2Y = NULL
+    for (i in 1:n) {
+      ss = sample(1:nrow(data))
+      v_R2Y[i] = pls.double.cv(data, labels[ss], 1:nrow(data),compmax = 2,perm.test = FALSE,times = 1,runn=1)$medianR2Y
+    }
+    pval = sum(v_R2Y>w_R2Y)/n
+    pval
   }
-  v_R2Y=NULL
-  for(i in 1:n){
-    ss=sample(1:nrow(data))
-    v_R2Y[i]=double_pls_cv(data,as.matrix(as.numeric(labels[ss])),1:nrow(data),option,2,compmax,1,1)$R2Y
-  }
-  pval=wilcox.test(w_R2Y,v_R2Y,alternative = "greater")$p.value
- 
-  pval
-}
+
 
 
 
@@ -371,7 +388,8 @@ pls.double.cv = function(Xdata,
                          perm.test=FALSE,
                          optim=TRUE,
                          scaling=c("centering","autoscaling"),
-                         times=100){
+                         times=100,
+                         runn=10){
 
   
   scal=pmatch(scaling,c("centering","autoscaling"))[1]
@@ -386,7 +404,7 @@ pls.double.cv = function(Xdata,
     lev=levels(Ydata)
     
 
-    for(j in 1:times){
+    for(j in 1:runn){
 
       o=double_pls_cv(Xdata,as.matrix(as.numeric(Ydata)),constrain,1,2,compmax,optim,scal)
       bcomp[j]=o$bcomp
@@ -398,32 +416,54 @@ pls.double.cv = function(Xdata,
       Q2Y[j]=o$Q2Y
       R2Y[j]=o$R2Y
       res$results[[j]]=o
-    }
-    if(perm.test){
-
-      v=NULL
-   
-      for(i in 1:times){
-
-        ss=sample(1:nrow(Xdata))
-        v[i]=double_pls_cv(Xdata[ss,],as.matrix(as.numeric(Ydata)),constrain,1,2,compmax,optim,scal)$Q2Y
-      }
-  #    pval=pnorm(o$Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
-      res$Q2Ysampled=v
-      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
       
     }
-
     res$Q2Y=Q2Y
     res$R2Y=R2Y
     res$medianR2Y=median(R2Y)
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bcomp=median(bcomp,na.rm = T)
+    res$bcomp=floor(median(bcomp,na.rm = T))
+    
+    bb=NULL;for(h in 1:runn) bb[h]=res$results[[h]]$bcomp
+    run = which(bb==res$bcomp)[1]
+    
+    res$T=res$results[[run]]$T
+    res$Q=res$results[[run]]$Q
+    res$P=res$results[[run]]$P
+    res$B=res$results[[run]]$B
+    
+    mpred=matrix(ncol=runn,nrow=nrow(Xdata));
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
+    res$Ypred=apply(mpred,1,function(x) names(which.max(table(x))))
+    
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Yfit)
+    res$Yfit=apply(mpred,1,function(x) names(which.max(table(x))))
+    
+    if(perm.test){
+
+      v=NULL
+   
+      for(i in 1:times){
+        ss=sample(1:nrow(Xdata))
+        w=NULL
+        for(ii in 1:runn)
+          w[ii]=double_pls_cv(Xdata[ss,],as.matrix(as.numeric(Ydata)),constrain,1,2,compmax,optim,scal)$Q2Y
+        
+        v[i]=median(w)
+      }
+      pval=pnorm(median(Q2Y), mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+  #    res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      res$p.value=pval
+      
+    }
+
+  
   }else{
 
-    for(j in 1:times){
+    for(j in 1:runn){
 
       o=double_pls_cv(Xdata,as.matrix(Ydata),constrain,2,2,compmax,optim,scal)
       bcomp[j]=o$bcomp
@@ -434,19 +474,6 @@ pls.double.cv = function(Xdata,
       R2Y[j]=o$R2Y
       res$results[[j]]=o
     }
-    
-    pval=NULL
-    if(perm.test){
-
-      v=NULL
-      for(i in 1:times){
-        ss=sample(1:nrow(Xdata))
-        v[i]=double_pls_cv(Xdata[ss,],as.matrix(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
-      }
-  #    pval=pnorm(o$Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
-      res$Q2Ysampled=v
-      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value
-    }
     res$Q2Y=Q2Y
     res$Q2Y=Q2Y
     res$R2Y=R2Y
@@ -454,7 +481,44 @@ pls.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bcomp=median(bcomp,na.rm = T)
+    res$bcomp=floor(median(bcomp,na.rm = T))
+    
+    
+    bb=NULL;for(h in 1:runn) bb[h]=res$results[[h]]$bcomp
+    run = which(bb==res$bcomp)[1]
+    
+    res$T=res$results[[run]]$T
+    res$Q=res$results[[run]]$Q
+    res$P=res$results[[run]]$P
+    res$B=res$results[[run]]$B
+    
+    mpred=matrix(ncol=runn,nrow=nrow(Xdata));
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
+    res$Ypred=apply(mpred,1,function(x) median(x))
+    
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Yfit)
+    res$Yfit=apply(mpred,1,function(x) median(x))
+    
+    pval=NULL
+    if(perm.test){
+
+      v=NULL
+      
+      for(i in 1:times){
+        ss=sample(1:nrow(Xdata))
+        w=NULL
+        for(ii in 1:runn)
+
+          w[ii]=double_pls_cv(Xdata[ss,],as.matrix(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
+
+        v[i]=median(w)
+      }
+      pval=pnorm(median(Q2Y), mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      #    res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      res$p.value=pval
+    }
+
   }
   res
 }
@@ -470,7 +534,8 @@ knn.double.cv = function(Xdata,
                          perm.test=FALSE,
                          optim=TRUE,
                          scaling=c("centering","autoscaling"),
-                         times=100){
+                         times=100,
+                         runn=10){
 
   scal=pmatch(scaling,c("centering","autoscaling"))[1]
   optim=as.numeric(optim)
@@ -485,7 +550,7 @@ knn.double.cv = function(Xdata,
   if(is.factor(Ydata)){
     lev=levels(Ydata)
 
-    for(j in 1:times){
+    for(j in 1:runn){
 
       o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,1,2,compmax,optim,scal)
       o$conf=table(o$Ypred,Ydata)
@@ -500,21 +565,6 @@ knn.double.cv = function(Xdata,
       
 
     }
-    pval=NULL
-    if(perm.test){
-
-      v=NULL
-
-      for(i in 1:times){
-
-        ss=sample(1:nrow(Xdata))
-        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,1,2,compmax,optim,scal)$Q2Y
-      }
-    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
-      res$Q2Ysampled=v
-      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
-      
-    }
     
     res$Q2Y=Q2Y
     res$R2Y=R2Y
@@ -522,13 +572,43 @@ knn.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bk=median(bk,na.rm = T)
+    res$bk=floor(median(bk,na.rm = T))
+    
+    mpred=matrix(ncol=runn,nrow=nrow(Xdata));
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
+    res$Ypred=apply(mpred,1,function(x) names(which.max(table(x))))
+    
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Yfit)
+    res$Yfit=apply(mpred,1,function(x) names(which.max(table(x))))
+    
+    
+    pval=NULL
+    if(perm.test){
+      
+      v=NULL
+      
+      for(i in 1:times){
+        ss=sample(1:nrow(Xdata))
+        w=NULL
+        for(ii in 1:runn)
+          
+          w[ii]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,1,2,compmax,optim,scal)$Q2Y
+        
+        v[i]=median(w)
+      }
+    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      
+    }
+    
+
     
     
   
   }else{
 
-    for(j in 1:times){
+    for(j in 1:runn){
  
       o=double_knn_cv(Xdata,as.numeric(Ydata),constrain,2,2,compmax,optim,scal)
       o$Yfit=as.numeric(o$Yfit)
@@ -538,15 +618,35 @@ knn.double.cv = function(Xdata,
       bk[j]=o$bk
       res$results[[j]]=o
     }
+    res$Q2Y=Q2Y
+    res$R2Y=R2Y
+    res$medianR2Y=median(R2Y)
+    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
+    res$medianQ2Y=median(Q2Y)
+    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
+    res$bk=floor(median(bk,na.rm = T))
+    
+    mpred=matrix(ncol=runn,nrow=nrow(Xdata));
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
+    res$Ypred=apply(mpred,1,function(x) median(x))
+    
+    for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Yfit)
+    res$Yfit=apply(mpred,1,function(x) median(x))
+    
     pval=NULL
     if(perm.test){
 
+      
       v=NULL
-
+      
       for(i in 1:times){
-
         ss=sample(1:nrow(Xdata))
-        v[i]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
+        w=NULL
+        for(ii in 1:runn)
+          
+          w[ii]=double_knn_cv(Xdata[ss,],as.numeric(Ydata),constrain,2,2,compmax,optim,scal)$Q2Y
+        
+        v[i]=median(w)
       }
     #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
       res$Q2Ysampled=v
@@ -554,13 +654,7 @@ knn.double.cv = function(Xdata,
       
     }
     
-    res$Q2Y=Q2Y
-    res$R2Y=R2Y
-    res$medianR2Y=median(R2Y)
-    res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
-    res$medianQ2Y=median(Q2Y)
-    res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bk=median(bk,na.rm = T)
+
   }
   res
 }

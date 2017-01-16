@@ -14,7 +14,8 @@ knn.double.cv(Xdata,
               perm.test=FALSE,
               optim=TRUE,
               scaling = c("centering","autoscaling"),
-              times=100)
+              times=100,
+              runn=10)
 }
 
 \arguments{
@@ -25,7 +26,9 @@ knn.double.cv(Xdata,
   \item{perm.test}{a classification vector.}
   \item{optim}{if perform the optmization of the number of k.}
   \item{scaling}{the scaling method to be used. Choices are "\code{centering}" or "\code{autoscaling}" (by default = "\code{centering}"). A partial string sufficient to uniquely identify the choice is permitted.}
-    \item{times}{number of cross-validations.}
+  \item{times}{number of cross-validations with permutated samples}
+    \item{runn}{number of cross-validations loops.}
+
 }
 
 \value{
@@ -59,7 +62,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  labels=iris[,5]
  pp=knn.double.cv(data,labels)
  print(pp$Q2Y)
- table(pp$results[[1]]$Ypred,labels)
+ table(pp$Ypred,labels)
  
 #
 # data(MetRef)
@@ -69,7 +72,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 # u=scaling(u)$newXtrain
 # pp=knn.double.cv(u,as.factor(MetRef$donor))
 # print(pp$Q2Y)
-# table(pp$results[[1]]$Ypred,MetRef$donor)
+# table(pp$Ypred,MetRef$donor)
 #
 }
 

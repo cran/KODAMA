@@ -1,6 +1,6 @@
 Package: KODAMA
-Version: 1.3
-Date: 2016-12-13
+Version: 1.4
+Date: 2017-01-15
 Author: Stefano Cacciatore, Leonardo Tenori, Claudio Luchinat, Phillip R. Bennett, and David A. MacIntyre
 Maintainer: Stefano Cacciatore <tkcaccia@gmail.com>
 Title: Knowledge Discovery by Accuracy Maximization
@@ -12,7 +12,7 @@ Suggests: rgl, knitr, rmarkdown
 VignetteBuilder: knitr
 SuggestsNote: No suggestions
 License: GPL (>= 2)
-Packaged: 2016-12-14 17:02:05 UTC; scacciat
-NeedsCompilation: no
+Packaged: 2017-01-16 11:42:26 UTC; scacciat
+NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2016-12-19 16:04:51
+Date/Publication: 2017-01-17 00:15:21

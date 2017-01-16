@@ -85,75 +85,78 @@ PLSDACV <- function(x, cl, constrain, k) {
     .Call('KODAMA_PLSDACV', PACKAGE = 'KODAMA', x, cl, constrain, k)
 }
 
-pls.kodama <- function(Xtrain, 
-                       Ytrain, 
-                       Xtest,
-                       Ytest=NULL,
-                       ncomp,                         
-                       scaling=c("centering","autoscaling"),
-                       perm.test=FALSE,
-                       times=100){
-  scal=pmatch(scaling,c("centering","autoscaling"))[1]
-  Xtrain=as.matrix(Xtrain)
-  Xtest=as.matrix(Xtest)
-  nr=nrow(Xtest)
-  if(is.factor(Ytrain)){
-    lev=levels(Ytrain)
-    Ytrain=transformy(Ytrain)
-    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp,scal)
-    Ypred=matrix(nrow=nr,ncol=ncomp)
-    for(i in 1:ncomp){
-      t=apply(o$Ypred[,,i],1,which.max)
-      Ypred[,i]=as.vector(factor(lev[t],levels=lev))
-    }
-    o$Ypred=Ypred
-    if(!is.null(Ytest)){
-      o$Q2Y=1-sum(((Ytest-Ypred[,ncomp]))^2)/sum((Ytest-mean(Ytest))^2)  
-      if(perm.test){
-        v=NULL
-        for(i in 1:times){
-          
-          ss=sample(1:nrow(Xtrain))
-          Xtrain_permuted=Xtrain[ss,]
-          op=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, ncomp,scal)
-          t=apply(op$Ypred[,,ncomp],1,which.max)
-          Ypred_permutated=as.vector(factor(lev[t],levels=lev))
-          v[i]=1-sum(((Ytest-Ypred_permutated))^2)/sum((Ytest-mean(Ytest))^2)
-          
-        }
-        o$pval=sum(v>o$Q2Y)/times
+pls.kodama =
+  function (Xtrain, Ytrain, Xtest, Ytest = NULL, ncomp, scaling = c("centering", 
+                                                                    "autoscaling"), perm.test = FALSE, times = 100) 
+  {
+    scal = pmatch(scaling, c("centering", "autoscaling"))[1]
+    Xtrain = as.matrix(Xtrain)
+    Xtest = as.matrix(Xtest)
+    nr = nrow(Xtest)
+    if (is.factor(Ytrain)) {
+      lev = levels(Ytrain)
+      Ytrain = transformy(Ytrain)
+      o = .Call("KODAMA_pls_kodama", PACKAGE = "KODAMA", Xtrain, 
+                Ytrain, Xtest, ncomp, scal)
+      Ypred = matrix(nrow = nr, ncol = ncomp)
+      for (i in 1:ncomp) {
+        t = apply(o$Ypred[, , i], 1, which.max)
+        Ypred[, i] = as.vector(factor(lev[t], levels = lev))
       }
-      
-      
-    }
-    
-  }else{
-    Ytrain=as.matrix(Ytrain)
-    o=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain, Ytrain, Xtest, ncomp,scal)
-    Ypred=matrix(nrow=nr,ncol=ncomp)
-    for(i in 1:ncomp){
-      Ypred[,i]=o$Ypred[,,i]
-    }
-    o$Ypred=Ypred
-    if(!is.null(Ytest)){
-      o$Q2Y=1-sum(((Ytest-Ypred[,ncomp]))^2)/sum((Ytest-mean(Ytest))^2)   
-      if(perm.test){
-        v=NULL
-        for(i in 1:times){
-          
-          ss=sample(1:nrow(Xtrain))
-          Xtrain_permuted=Xtrain[ss,]
-          op=.Call('KODAMA_pls_kodama', PACKAGE = 'KODAMA', Xtrain_permuted, Ytrain, Xtest, ncomp,scal)
-          Ypred_permutated=op$Ypred[,,ncomp] 
-          v[i]=1-sum(((Ytest-Ypred_permutated))^2)/sum((Ytest-mean(Ytest))^2)
-          
+      Ypredncomp=o$Ypred[, , ncomp]
+      o$Ypred = Ypred
+      if (!is.null(Ytest)) {
+        Ytest = transformy(Ytest)
+        tra=transformy(factor(Ypred[, ncomp], levels = lev))
+        o$Q2Y = 1 - sum(((Ytest - Ypredncomp))^2)/sum((Ytest -  mean(Ytest))^2)
+        
+        o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
+        if (perm.test) {
+          v = NULL
+          for (i in 1:times) {
+            ss = sample(1:nrow(Xtrain))
+            Xtrain_permuted = Xtrain[ss, ]
+            op = .Call("KODAMA_pls_kodama", PACKAGE = "KODAMA", 
+                       Xtrain_permuted, Ytrain, Xtest, ncomp, scal)
+            t = apply(op$Ypred[, , ncomp], 1, which.max)
+            Ypred_permutated = as.vector(factor(lev[t],  levels = lev))
+            Ypredncomp=op$Ypred[, , ncomp]
+            tra=transformy(factor(Ypred_permutated, levels = lev))
+            v[i] = 1 - sum(((Ytest - Ypredncomp))^2)/sum((Ytest -   mean(Ytest))^2)
+          }
+          o$pval = sum(v > o$Q2Y)/times
         }
-        o$pval=sum(v>o$Q2Y)/times
+      }
+    }  else {
+      Ytrain = as.matrix(Ytrain)
+      o = .Call("KODAMA_pls_kodama", PACKAGE = "KODAMA", Xtrain, 
+                Ytrain, Xtest, ncomp, scal)
+      Ypred = matrix(nrow = nr, ncol = ncomp)
+      for (i in 1:ncomp) {
+        Ypred[, i] = o$Ypred[, , i]
+      }
+      o$Ypred = Ypred
+      if (!is.null(Ytest)) {
+        o$Q2Y = 1 - sum(((Ytest - Ypred[, ncomp]))^2)/sum((Ytest - 
+                                                             mean(Ytest))^2)
+        o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
+        if (perm.test) {
+          v = NULL
+          for (i in 1:times) {
+            ss = sample(1:nrow(Xtrain))
+            Xtrain_permuted = Xtrain[ss, ]
+            op = .Call("KODAMA_pls_kodama", PACKAGE = "KODAMA", 
+                       Xtrain_permuted, Ytrain, Xtest, ncomp, scal)
+            Ypred_permutated = op$Ypred[, , ncomp]
+            v[i] = 1 - sum(((Ytest - Ypred_permutated))^2)/sum((Ytest - 
+                                                                  mean(Ytest))^2)
+          }
+          o$pval = sum(v > o$Q2Y)/times
+        }
       }
     }
+    o
   }
-  o
-}
 
 
 
