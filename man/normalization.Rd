@@ -2,7 +2,7 @@
 
 \alias{normalization}
 
-\title{Normalization methods}
+\title{Normalization Methods}
 
 \description{Collection of Different Normalization Methods.}
 
@@ -37,6 +37,8 @@ normalization(Xtrain,Xtest=NULL, method = "pqn",ref=NULL)
     \item{newXtest}{a normalized matrix (test data set).}
     \item{coeXtest}{a vector of normalization coefficient of the test data set.}
   }
+  
+\author{Stefano Cacciatore and Leonardo Tenori}
 
   \references{
   	Dieterle F,Ross A, Schlotterbeck G, Senn H.\cr
@@ -50,10 +52,9 @@ Knowledge discovery by accuracy maximization.\cr
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
-\emph{Bioinformatics} 2016. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
+\emph{Bioinformatics} 2017;33(4):621-623. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
 
-\author{Stefano Cacciatore and Leonardo Tenori}
 
   \seealso{\code{\link{scaling}}}
 
@@ -64,7 +65,7 @@ u=u[,-which(colSums(u)==0)]
 u=normalization(u)$newXtrain
 u=scaling(u)$newXtrain
 class=as.numeric(as.factor(MetRef$gender))
-cc= prcomp(u)$x
-plot(cc,pch=21,bg=class,xlab="First Component",ylab="Second Component")
+cc=pca(u)
+plot(cc$x,pch=21,bg=class,xlab=cc$txt[1],ylab=cc$txt[2])
 }
 \keyword{normalization}

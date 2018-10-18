@@ -14,6 +14,11 @@ This function performs a permutation test using PLS to assess association betwee
 \value{
 The p-value of the test.
 }
+
+
+\author{Stefano Cacciatore}
+
+
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
@@ -21,10 +26,8 @@ Knowledge discovery by accuracy maximization.\cr
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
-\emph{Bioinformatics} 2016. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
+\emph{Bioinformatics} 2017;33(4):621-623. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
-
-\author{Stefano Cacciatore}
 
 \seealso{\code{\link{KODAMA}}}
 \examples{

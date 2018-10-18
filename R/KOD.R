@@ -1,3 +1,96 @@
+txtsummary = function(x,digits=0,scientific=FALSE){
+  
+  m=median(x,na.rm = TRUE)
+  ci=quantile(x,probs = c(0.025,0.975),na.rm = TRUE)
+  
+  if(scientific){
+    m=format(m,digits = digits,scientific = scientific)
+    ci=format(ci,digits = digits,scientific = scientific)
+  }else{
+    m=round(m,digits=digits)
+    ci=round(ci,digits=digits)
+    
+  }
+  txt=paste(m," [",ci[1]," ",ci[2],"]",sep="")
+  txt
+}
+
+#-----for numerical data 
+continuous_table = function(name,num, label, digits=0,scientific=FALSE){
+  ll=levels(label)
+  A=num[label==ll[1]]
+  B=num[label==ll[2]]
+  v=NULL
+  v[1]=paste(name,", median [95%CI]",sep="")
+  nn=length(unique(label))
+  
+  
+  if(nn==2){
+    pval=wilcox.test(num~label)$p.value
+  }
+  if(nn>2){
+    pval=kruskal.test(num~label)$p.value
+  }
+  if(nn>1){
+    v[2:(1+nn)]=tapply(num,label,function(x) txtsummary(x,digits = digits,scientific = scientific))
+    v[nn+2]=txtsummary(num,digits = digits,scientific = scientific)
+    v[nn+3]=format(pval,digits = 3,scientific = TRUE)
+  }else{
+    v[nn+3]="only 1 group"
+  }
+  names(v)=c("Feature",unique(label),"Total","p-value")
+  v
+}
+
+#-----for categorical data 
+categorical_table  = function(name,cat,label){
+  nn=length(unique(label))
+  t0=table(cat,label)
+  ta=cbind(t0,as.matrix(table(cat)))
+  tb=sprintf("%.1f",t(t(ta)/colSums(ta))*100)
+  tc=matrix(paste(ta," (",tb,")",sep=""),ncol=nn+1)
+  if(nrow(t0)==1){
+    pvalue=""
+  }else{
+    pvalue=format(fisher.test(ta,workspace = 10^7)$p.value,digits = 3,scientific = TRUE)
+  }
+  v=NULL
+  
+  v[1]=name
+  v[nn+3]=pvalue
+  group=paste("   ",rownames(ta),", n (%)",sep="")
+  cc=cbind(group,tc,rep(NA,length(group)))
+  cc=rbind(v,cc)
+  colnames(cc)=c("Feature",colnames(t0),"Total","p-value")
+  cc[is.na(cc)]=""
+  cc
+}
+
+
+
+
+pca = function(x,...){
+  res=prcomp(x,...)
+  ss=sprintf("%.1f",summary(res)$importance[2,]*100)
+  res$txt = paste(names(summary(res)$importance[2,])," (",ss,"%)",sep="")
+  res
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 samm = function (d, k = 2) {
   
 
@@ -8,6 +101,27 @@ samm = function (d, k = 2) {
 }
 
 
+knnsampling = function(data,n,k=10,cycle=1){
+  
+  ss=sample(nrow(data),n)
+  for(ii in 1:cycle){
+    s=ss
+    
+    data_sampled=data[s,]
+    g=knn_Armadillo(data,data_sampled,10)
+    gi=g$nn_index
+    best=Inf
+    ss=s
+    for(j in 1:n){
+      gij=gi[j,]
+      gg=knn_Armadillo(data_sampled, data[gij,],k = k)
+      tot=rowSums(gg$distances)
+      sel=gij[which.max(tot)]
+      ss[j]=sel
+    }
+  }
+  ss
+}
 
 
 
@@ -33,9 +147,11 @@ epsilon = 0.05,dims=2,landmarks=5000)
  
   LMARK=(nsample>landmarks)
   if(LMARK){
-    landpoints=sort(sample(nsample,landmarks))
+    landpoints=sort(knnsampling(data,landmarks))
+    #landpoints=sort(sample(nrow(data),landmarks))
     Tdata=data[-landpoints,,drop=FALSE]
     Xdata=data[landpoints,,drop=FALSE]
+    Xdata_landpoints=Xdata
     Tfix=fix[-landpoints]
     Xfix=fix[landpoints] 
 
@@ -44,6 +160,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     vect_proj = matrix(NA,nrow = M, ncol = nrow(Tdata))
   }else{
     Xdata=data
+    Xdata_landpoints=Xdata
     Xfix=fix
     Xconstrain=constrain  
     landpoints=1:nsample
@@ -66,6 +183,25 @@ epsilon = 0.05,dims=2,landmarks=5000)
   
   for (k in 1:M) {
     setTxtProgressBar(pb, k)
+    
+    
+    
+    
+    
+    
+    if(LMARK){
+     ks=round(nsample/landmarks)
+      tt=knn_Armadillo(data,data[landpoints,],k=ks)$nn_index
+      landpoints2=landpoints
+      for(ii in 1:landmarks){
+        landpoints2[ii]=tt[ii,sample(ks,1)]
+      }
+    #landpoints=sort(sample(nrow(data),landmarks))
+      Xdata=data[landpoints2,,drop=FALSE]
+    }
+    
+    
+    
     
     #
     # Here a number of samples are selected randomly
@@ -205,7 +341,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
   }
   close(pb)
   ma = ma/normalization
-  Edist = as.matrix(dist(Xdata))
+  Edist = as.matrix(dist(Xdata_landpoints))
   ma[ma < epsilon] = 0
   mam = (1/ma) * Edist
   
@@ -236,7 +372,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     pp_landpoints=samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
 
 
-    pr=another(pp_landpoints,Xdata,Tdata,res,vect_proj,epsilon) 
+    pr=another(pp_landpoints,Xdata_landpoints,Tdata,res,vect_proj,epsilon) 
     pp[landpoints,]=pp_landpoints
     pp[-landpoints,]=pr$pp;
   
@@ -256,7 +392,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
               pp=pp,
               acc = accu, proximity = prox, 
               v = vect_acc, res = total_res, 
-              data = Xdata, 
+              data = Xdata_landpoints, 
               f.par = f.par,entropy=H,
               landpoints=landpoints))
 }
@@ -371,7 +507,7 @@ core_cpp <- function(x,
   }
   matchFUN=pmatch(FUN[1],c("KNN","PLS-DA"))
   
-  out=corecpp(x, xTdata,clbest, Tcycle=20, matchFUN, fpar, constrain, fix, shake,proj)
+  out=corecpp(x, xTdata,clbest, Tcycle, matchFUN, fpar, constrain, fix, shake,proj)
   return(out)
 }
 
@@ -520,6 +656,8 @@ pls.double.cv = function(Xdata,
     }
 
   }
+  res$txtQ2Y=txtsummary(res$Q2Y,digits=2)
+  res$txtR2Y=txtsummary(res$R2Y,digits=2)
   res
 }
 
@@ -596,10 +734,12 @@ knn.double.cv = function(Xdata,
         
         v[i]=median(w)
       }
-    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
-      res$Q2Ysampled=v
-      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+
       
+      pval=pnorm(median(Q2Y), mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+      res$Q2Ysampled=v
+      #    res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      res$p.value=pval
     }
     
 
@@ -648,18 +788,213 @@ knn.double.cv = function(Xdata,
         
         v[i]=median(w)
       }
-    #  pval=pnorm(Q2Y, mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
+
+      pval=pnorm(median(Q2Y), mean=mean(v), sd=sqrt(((length(v)-1)/length(v))*var(v)), lower.tail=FALSE) 
       res$Q2Ysampled=v
-      res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
-      
+      #    res$p.value=wilcox.test(Q2Y,v,alternative = "greater")$p.value     
+      res$p.value=pval
     }
     
 
   }
+  res$txtQ2Y=txtsummary(res$Q2Y,digits=2)
+  res$txtR2Y=txtsummary(res$R2Y,digits=2)
   res
 }
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+frequency_matching = function(data,label,times=5,seed=1234){
+
+  data=as.data.frame(data)
+  data2=data
+  for(i in 1:ncol(data2)){
+    if(is.numeric(data2[,i])){
+    
+    v <- quantile(data2[,i],prob=seq(0,0.99,0.2))
+    data2[,i]= findInterval(data2[,i], v)
+    }
+  }
+  if(is.null(rownames(data2))){
+    rownames(data2)=paste("S",1:nrow(data2),sep="")
+    rownames(data)=paste("S",1:nrow(data),sep="")
+  }
+  names(label)=rownames(data2)
+  data2=as.matrix(data2[!is.na(label),])
+  label=label[!is.na(label)]
+  
+  minor=names(which.min(table(label)))
+  major=names(which.max(table(label)))
+  data_minor=data2[label==minor,,drop=FALSE]
+  data_major=data2[label==major,,drop=FALSE]
+  
+  nc=ncol(data2)
+  grid=list()
+  count=list()
+  rest=list()
+  for(j in 1:nc){
+    
+    lis=list()
+    
+    h=1
+    for(i in j:nc){
+      lis[[h]]=levels(as.factor(data2[,i]))
+      h=h+1
+    }
+    grid[[j]]=as.matrix(expand.grid(lis))
+    
+    co = apply(grid[[j]],1,function(y) sum(apply(as.matrix(data_minor)[,j:nc,drop=FALSE],1,function(x) all(y==x))))
+    count[[j]]=co*times
+  }
+  rest=list()
+  rest[[1]]=count[[1]]
+  selected=rep(FALSE,nrow(data_major))
+  names(selected)=rownames(data_major)
+  for(j in 1:nc){
+    if(sum(rest[[j]])>0){
+      for(i in 1:nrow(grid[[j]])){
+        if(rest[[j]][i]!=0){
+          who=apply(as.matrix(data_major[,j:nc]),1,function(x) all(grid[[j]][i,]==x))
+          n_who=min(sum(who[!selected]),rest[[j]][i])
+          rest[[j]][i]=rest[[j]][i]-n_who
+          set.seed(seed)
+          ss=sample(names(which(who[!selected])),n_who)
+          selected[ss]=TRUE
+        }
+      }
+      if(j<nc){
+        temp=list()
+        for(ii in 2:ncol(grid[[j]]))   temp[[ii-1]]=as.matrix(grid[[j]])[,ii]
+        rest[[j+1]]=aggregate(rest[[j]], by=temp, FUN=sum, na.rm=TRUE)[,"x"]
+      }else{
+        rest[[j+1]]=sum(rest[[j]])
+      }
+      
+    }
+  }
+  if(sum(rest[[j]])>0){
+    set.seed(seed)
+    ss=sample(which(!selected),rest[[j+1]])
+    selected[ss]=TRUE
+  }
+  
+  selection=c(rownames(data_major[selected,,drop=FALSE]),rownames(data_minor))
+  
+  
+  data=data[selection,]
+  data2=data2[selection,]
+  label=label[selection]
+  return(list(data=data,label=label,selection=selection))#,grid=grid,rest=rest))
+}
+
+
+
+
+
+
+vis.KODAMA =
+  function (data, res, landmarks = 1000, epsilon = 0.05, knnsampling = FALSE,dims=2) 
+  {
+    
+    if(any(is.na(res))){
+      landpoints=which(is.na(colSums(res)))
+      landmarks=length(landpoints)
+    }else{
+      
+      landmarks=min(landmarks,nrow(data))
+      LMARK= FALSE
+      if(landmarks<nrow(data)) LMARK =TRUE
+      
+      if(knnsampling){
+        landpoints = sort(knnsampling(data, landmarks))
+      }else{
+        landpoints = sort(sample(nrow(data), landmarks))
+      }
+    }
+    
+    
+    nsample=ncol(res)
+    M=nrow(res)
+    Tdata = data[-landpoints, , drop = FALSE]
+    Xdata = data[landpoints, , drop = FALSE]
+    Xdata_landpoints = Xdata
+    vect_proj = res[,-landpoints]
+    vect_landpoints = res[,landpoints]
+    
+    
+    nva = ncol(Xdata)
+    nsa = nrow(Xdata)
+    
+    
+    ma = matrix(0, ncol = nsa, nrow = nsa)
+    normalization = matrix(0, ncol = nsa, nrow = nsa)
+    ####################################
+    for(i in 1:M){
+      clbest = vect_landpoints[i,]
+      
+      uni = unique(clbest)
+      nun = length(uni)
+      for (ii in 1:nun) {
+        sel=which(clbest == uni[ii])
+        ma[sel,sel] = ma[sel,sel] + 1
+      }
+      sel2=!is.na(clbest)
+      normalization[sel2,sel2] = normalization[sel2,sel2] + 1
+    }
+    ###########################
+    ma = ma/normalization
+    Edist = as.matrix(dist(Xdata_landpoints))
+    ma[ma < epsilon] = 0
+    
+    mam = (1/ma) * Edist
+    mam[is.na(mam)] <- .Machine$double.xmax
+    mam[is.infinite(mam) & mam > 0] <- .Machine$double.xmax
+    mam = floyd(mam)
+    mam[mam == .Machine$double.xmax] <- NA
+    prox = Edist/mam
+    diag(prox) = 1
+    prox[is.na(prox)] = 0
+    maxvalue = max(mam, na.rm = T)
+    mam[is.na(mam)] = maxvalue
+    mam = as.dist(mam)
+    
+    if (LMARK) {
+      pp = matrix(nrow = nsample, ncol = dims)
+      mimi = min(mam[mam != 0], na.rm = T)
+      pp_landpoints = samm((mam + runif(length(mam)) * mimi/1e+06), 
+                           k = dims)$points
+      pr = another(pp_landpoints, Xdata_landpoints, Tdata, 
+                   vect_landpoints, vect_proj, epsilon)
+      pp[landpoints, ] = pp_landpoints
+      pp[-landpoints, ] = pr$pp
+      
+    }  else {
+      mimi = min(mam[mam != 0], na.rm = T)
+      pp_landpoints = samm((mam + runif(length(mam)) * mimi/1e+06), 
+                           k = dims)$points
+      pp = pp_landpoints
+      
+    }
+    pp
+  }
 
  

@@ -12,7 +12,7 @@ knn.kodama <- function(Xtrain,
                        k,                      
                        scaling=c("centering","autoscaling"),
                        perm.test=FALSE,
-                       times=100){
+                       times=1000){
   scal=pmatch(scaling,c("centering","autoscaling"))[1]
   oo=list()
     Xtrain=as.matrix(Xtrain)
@@ -85,9 +85,17 @@ PLSDACV <- function(x, cl, constrain, k) {
     .Call('KODAMA_PLSDACV', PACKAGE = 'KODAMA', x, cl, constrain, k)
 }
 
+RQ <- function(yData, yPred) {
+  .Call('KODAMA_RQ', PACKAGE = 'KODAMA', yData, yPred)
+}
+
 pls.kodama =
-  function (Xtrain, Ytrain, Xtest, Ytest = NULL, ncomp, scaling = c("centering", 
-                                                                    "autoscaling"), perm.test = FALSE, times = 100) 
+  function (Xtrain, 
+            Ytrain, 
+            Xtest, 
+            Ytest = NULL, 
+            ncomp, scaling = c("centering", "autoscaling"), 
+            perm.test = FALSE, times = 1000) 
   {
     scal = pmatch(scaling, c("centering", "autoscaling"))[1]
     Xtrain = as.matrix(Xtrain)
@@ -110,7 +118,7 @@ pls.kodama =
         tra=transformy(factor(Ypred[, ncomp], levels = lev))
         o$Q2Y = 1 - sum(((Ytest - Ypredncomp))^2)/sum((Ytest -  mean(Ytest))^2)
         
-        o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
+    #    o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
         if (perm.test) {
           v = NULL
           for (i in 1:times) {
@@ -139,7 +147,7 @@ pls.kodama =
       if (!is.null(Ytest)) {
         o$Q2Y = 1 - sum(((Ytest - Ypred[, ncomp]))^2)/sum((Ytest - 
                                                              mean(Ytest))^2)
-        o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
+     #   o$scoreXtest=as.matrix(Xtest) %*% o$R[,1:ncomp]
         if (perm.test) {
           v = NULL
           for (i in 1:times) {
@@ -192,5 +200,214 @@ corecpp <- function(x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake,
 
 another <- function(pptrain, xtrain, xtest, res, Xlink, epsilon) {
   .Call('KODAMA_another', PACKAGE = 'KODAMA', pptrain, xtrain, xtest, res, Xlink, epsilon)
+}
+
+svm.kodama <- function(Xtrain,
+                       Ytrain,
+                       Xtest, 
+                       scaling=c("centering","autoscaling"),
+                       ncomp = min(c(10,ncol(Xtrain),nrow(Xtrain)-1)),
+                       kernel=c("linear","polynomial","radial","sigmoid"),
+                       degree=2:5,
+                       gamma=2^(seq(-13,3,2)),
+                       coef0=c(-1,0,1),
+                       C=2^(seq(-5,15,2))) {
+  
+  constrain=as.numeric(as.factor(constrain))
+  Xtrain=as.matrix(Xtrain)
+  Xtest=as.matrix(Xtest)
+  
+  if(is.factor(Ytrain)){
+    Ytrain=as.numeric(Ytrain)
+    svm_type=0
+  }else{
+    svm_type=3
+  }
+  Ytrain=as.matrix(Ytrain)
+  
+ 
+  
+  scaling=scaling[1]
+  scal <- pmatch(scaling, c("centering",
+                               "autoscaling"), 99) 
+  
+  if (scal > 10) stop("wrong scaling specification!")
+  
+  kern <- pmatch(kernel, c("linear",
+                           "polynomial",
+                           "radial",
+                           "sigmoid"), 99) - 1
+  
+  if (any(kern > 10)) stop("wrong kernel specification!")
+  
+  
+  if (!is.numeric(degree)) stop("wrong degree specification!")
+  if (!is.numeric(gamma)) stop("wrong gamma specification!")
+  if (!is.numeric(coef0)) stop("wrong coef0 specification!")
+  if (!is.numeric(C)) stop("wrong C specification!")
+  
+  linear_parameter=NULL
+  polynomial_parameter=NULL
+  radial_parameter=NULL
+  sigmoid_parameter=NULL
+  
+  if(any(kern==0)) linear_parameter=expand.grid(list(kern=0,degree=3,gamma=1/ncol(Xtrain),coef0=0,C=C))
+  if(any(kern==1)) polynomial_parameter=expand.grid(list(kern=1,degree=degree,gamma=gamma,coef0=coef0,C=C))
+  if(any(kern==2)) radial_parameter=expand.grid(list(kern=2,degree=3,gamma=gamma,coef0=0,C=C))
+  if(any(kern==3)) sigmoid_parameter=expand.grid(list(kern=3,degree=3,gamma=gamma,coef0=coef0,C=C))
+  
+  parameter=rbind(linear_parameter,
+                  polynomial_parameter,
+                  radial_parameter,
+                  sigmoid_parameter)
+  parameter=as.matrix(parameter)
+
+  
+  opt=.Call('KODAMA_optim_svm_cv', PACKAGE = 'KODAMA', Xtrain, Ytrain, 1:nrow(Xtrain),ncomp,scal,svm_type,parameter)
+  ncomp=opt$optimized_param[,1,drop=F]
+  parameter=opt$optimized_param[,-1,drop=F]
+  
+  out=.Call('KODAMA_svm_kodama', PACKAGE = 'KODAMA',  Xtrain,
+                                                      Ytrain,
+                                                      Xtest,
+                                                      ncomp,
+                                                      scal,
+                                                      svm_type,
+                                                      parameter)
+
+  out
+}
+
+
+
+optim.svm.cv <- function(xData, 
+                         yData, 
+                         constrain=1:nrow(xData),
+                         scaling=c("centering","autoscaling"),
+                         ncomp = min(c(10,ncol(xData),nrow(xData)-1)),
+                         kernel=c("linear","polynomial","radial","sigmoid"),
+                         degree=2:5,
+                         gamma=2^(seq(-13,3,2)),
+                         coef0=c(-1,0,1),
+                         C=2^(seq(-5,15,2))) {
+  
+  constrain=as.numeric(as.factor(constrain))
+  xData=as.matrix(xData)
+
+  if(is.factor(yData)){
+    yData=as.numeric(yData)
+    svm_type=0
+  }else{
+    svm_type=3
+  }
+  yData=as.matrix(yData)
+  
+  scaling=scaling[1]
+  scal <- pmatch(scaling, c("centering",
+                            "autoscaling"), 99) 
+  
+  if (scal > 10) stop("wrong scaling specification!")
+  
+  kern <- pmatch(kernel, c("linear",
+                           "polynomial",
+                           "radial",
+                           "sigmoid"), 99) - 1
+  
+  if (any(kern > 10)) stop("wrong kernel specification!")
+  if (!is.numeric(degree)) stop("wrong degree specification!")
+  if (!is.numeric(gamma)) stop("wrong gamma specification!")
+  if (!is.numeric(coef0)) stop("wrong coef0 specification!")
+  if (!is.numeric(C)) stop("wrong C specification!")
+  
+  linear_parameter=NULL
+  polynomial_parameter=NULL
+  radial_parameter=NULL
+  sigmoid_parameter=NULL
+  
+  if(any(kern==0)) linear_parameter=expand.grid(list(kern=0,degree=3,gamma=1/ncol(xData),coef0=0,C=C))
+  if(any(kern==1)) polynomial_parameter=expand.grid(list(kern=1,degree=degree,gamma=gamma,coef0=coef0,C=C))
+  if(any(kern==2)) radial_parameter=expand.grid(list(kern=2,degree=3,gamma=gamma,coef0=0,C=C))
+  if(any(kern==3)) sigmoid_parameter=expand.grid(list(kern=3,degree=3,gamma=gamma,coef0=coef0,C=C))
+  
+  parameter=rbind(linear_parameter,
+                  polynomial_parameter,
+                  radial_parameter,
+                  sigmoid_parameter)
+  parameter=as.matrix(parameter)
+  
+  
+  
+  .Call('KODAMA_optim_svm_cv', PACKAGE = 'KODAMA', xData, yData, constrain,ncomp,scal,svm_type,parameter)
+}
+
+
+
+
+
+
+svm.double.cv <- function(xData, 
+                         yData, 
+                         constrain=1:nrow(xData),
+                         scaling=c("centering","autoscaling"),
+                         ncomp = min(c(10,ncol(xData),nrow(xData)-1)),
+                         kernel=c("linear","polynomial","radial","sigmoid"),
+                         degree=2:5,
+                         gamma=2^(seq(-13,3,2)),
+                         coef0=c(-1,0,1),
+                         C=2^(seq(-5,15,2)),
+                         timeCV=10) {
+  
+  constrain=as.numeric(as.factor(constrain))
+  
+  XData=as.matrix(XData)
+  
+  if(is.factor(yData)){
+    yData=as.numeric(yData)
+    svm_type=0
+  }else{
+    svm_type=3
+  }
+  yData=as.matrix(yData)
+  
+  scaling=scaling[1]
+  scal <- pmatch(scaling, c("centering",
+                            "autoscaling"), 99) 
+  
+  if (scal > 10) stop("wrong scaling specification!")
+  
+  kern <- pmatch(kernel, c("linear",
+                           "polynomial",
+                           "radial",
+                           "sigmoid"), 99) - 1
+  
+  if (any(kern > 10)) stop("wrong kernel specification!")
+  if (!is.numeric(degree)) stop("wrong degree specification!")
+  if (!is.numeric(gamma)) stop("wrong gamma specification!")
+  if (!is.numeric(coef0)) stop("wrong coef0 specification!")
+  if (!is.numeric(C)) stop("wrong C specification!")
+  
+  linear_parameter=NULL
+  polynomial_parameter=NULL
+  radial_parameter=NULL
+  sigmoid_parameter=NULL
+  
+  if(any(kern==0)) linear_parameter=expand.grid(list(kern=0,degree=3,gamma=1/ncol(xData),coef0=0,C=C))
+  if(any(kern==1)) polynomial_parameter=expand.grid(list(kern=1,degree=degree,gamma=gamma,coef0=coef0,C=C))
+  if(any(kern==2)) radial_parameter=expand.grid(list(kern=2,degree=3,gamma=gamma,coef0=0,C=C))
+  if(any(kern==3)) sigmoid_parameter=expand.grid(list(kern=3,degree=3,gamma=gamma,coef0=coef0,C=C))
+  
+  parameter=rbind(linear_parameter,
+                  polynomial_parameter,
+                  radial_parameter,
+                  sigmoid_parameter)
+  parameter=as.matrix(parameter)
+  
+  
+  
+  .Call('KODAMA_svm_double_cv', PACKAGE = 'KODAMA', xData, yData, constrain,ncomp,scal,svm_type,parameter,timeCV)
+}
+
+knn_Armadillo <- function(Xtrain, Xtest, k) {
+  .Call('KODAMA_knn_Armadillo', PACKAGE = 'KODAMA', Xtrain, Xtest, k)
 }
 

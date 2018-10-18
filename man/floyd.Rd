@@ -14,12 +14,13 @@ floyd(data)
 \value{
 \code{floyd} returns a matrix with the total lengths of the shortest path between each pair of points.
 }
-\author{
-Stefano Cacciatore
-}
+
 \references{
-Floyd RW. Algorithm 97: Shortest path. Commun ACM 5(6):345.
+Floyd, Robert W	\cr
+Algorithm 97: Shortest Path.\cr
+\emph{Communications of the ACM} 1962; 5 (6): 345. doi:10.1145/367766.368168. \href{https://dl.acm.org/citation.cfm?doid=367766.368168}{Link}
 }
+
 
 
 \examples{

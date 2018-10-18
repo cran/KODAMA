@@ -101,5 +101,3 @@
 	delete [] d_ptr;
 	delete the_tree;
 	}
-  
-  

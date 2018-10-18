@@ -498,5 +498,3 @@ void svmwrite (double *v, int *r, int *c,
     free (m.SV);
 
 }
-
-

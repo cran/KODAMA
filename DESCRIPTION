@@ -1,10 +1,10 @@
 Package: KODAMA
-Version: 1.4
-Date: 2017-01-15
+Version: 1.5
+Date: 2018-10-18
 Author: Stefano Cacciatore, Leonardo Tenori, Claudio Luchinat, Phillip R. Bennett, and David A. MacIntyre
 Maintainer: Stefano Cacciatore <tkcaccia@gmail.com>
 Title: Knowledge Discovery by Accuracy Maximization
-Description: An unsupervised and semi-supervised learning algorithm that performs feature extraction from noisy and high-dimensional data.
+Description: KODAMA algorithm is an unsupervised and semi-supervised learning algorithm that performs feature extraction from noisy and high-dimensional data. It facilitates identification of patterns representing underlying groups on all samples in a data set. The algorithm was published by Cacciatore et al. 2014 <DOI:10.1073/pnas.1220873111>. Addition functions was introduced by Cacciatore et al. 2017 <DOI:10.1093/bioinformatics/btw705> to facilitate the identification of key features associated with the generated output and are easily interpretable for the user. Cross-validated techniques are also included in this package.
 Depends: R (>= 2.10.0), stats
 Imports: Rcpp (>= 0.12.4)
 LinkingTo: Rcpp, RcppArmadillo
@@ -12,7 +12,7 @@ Suggests: rgl, knitr, rmarkdown
 VignetteBuilder: knitr
 SuggestsNote: No suggestions
 License: GPL (>= 2)
-Packaged: 2017-01-16 11:42:26 UTC; scacciat
+Packaged: 2018-10-18 13:19:03 UTC; Stefano
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2017-01-17 00:15:21
+Date/Publication: 2018-10-18 15:20:07 UTC

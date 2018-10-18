@@ -1,17 +1,25 @@
-\name{mcplot}
-\alias{mcplot}
-\title{Evaluation of the Monte Carlo accuracy results}
-\description{
-This function can be used to plot the accuracy values obtained during KODAMA procedure.
-}
+\name{txtsummary}
+
+\alias{txtsummary}
+
+\title{Median and Coefficient Interval}
+
+\description{Summarization of a numeric vector.}
+
 \usage{
-mcplot(model)
+txtsummary (x,digits=0,scientific=FALSE)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
-  \item{model}{output of KODAMA.}
+  \item{x}{a numeric vector.}
+  \item{digits}{how many significant digits are to be used.}
+  \item{scientific}{either a logical specifying whether result should be encoded in scientific format.}
 
 }
+
+\value{
+    The function returns the median and the 95\% coefficient interval of numeric vetor.
+  }
 
 \author{Stefano Cacciatore}
 
@@ -25,12 +33,13 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \emph{Bioinformatics} 2017;33(4):621-623. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/doi/10.1093/bioinformatics/btw705/2667156/KODAMA-an-R-package-for-knowledge-discovery-and}{Link}
 }
 
-
-\seealso{\code{\link{KODAMA}}}
+  \seealso{\code{\link{categorical_table}},\code{\link{continuous_table}}}
 
 \examples{
-# data=as.matrix(iris[,-5])
-# kk=KODAMA(data)
-# mcplot(kk)
-}
+data(clinical)
 
+txtsummary(clinical[,"BMI"])
+
+
+}
+\keyword{txtsummary}
