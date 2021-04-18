@@ -25,7 +25,7 @@ A list with the following elements:
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{https://www.pnas.org/content/111/14/5117}{Link}
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
@@ -42,15 +42,15 @@ Comparison of discrimination methods for the classification of tumors using gene
 \emph{J Am Stat Assoc} 2002;97(417):77-87.
 }
 \examples{
+\donttest{
 data(lymphoma)
 class=1+as.numeric(lymphoma$class)
 cc=prcomp(lymphoma$data)$x
 plot(cc,pch=21,bg=class,xlab="First Component",ylab="Second Component")
 
-#
-# kk=KODAMA(lymphoma$data)
-# plot(kk$pp,pch=21,bg=class,xlab="First Component",ylab="Second Component")
-#
-}
+kk=KODAMA(lymphoma$data)
+plot(kk$pp,pch=21,bg=class,xlab="First Component",ylab="Second Component")
 
+}
+}
 \keyword{datasets}

@@ -21,14 +21,14 @@ vignette: >
 
 KODAMA (Knowledge Discovery by Accuracy Maximization) is a novel learning algorithm for unsupervised feature extraction, specifically designed for analysing noisy and high-dimensional data sets (Cacciatore \emph{et al.}, 2014).The core idea of the original algorithm is to use an iteration procedure to produce a hypothetical classification through maximization of cross-validated predictive accuracy. Using only the data set as input (no \emph{a priori} knowledge is needed), an iterative procedure permits classification with a high cross-validated accuracy.
 Two different classifiers are implemented in this package for the computation of cross-validated predictive accuracy: \emph{k}-nearest neighbors (\emph{k}NN) and Partial Least Squares - Discriminant Analysis (PLS-DA). This procedure is repeated several times to average the effects owing to the randomness of the iterative procedure. After each run of the procedure, a classification vector with high cross-validated accuracy is obtained. KODAMA subsequently collects and processes these results by constructing a dissimilarity matrix to provide a holist view of the data.
-This documentation introduces the usage of KODAMA. More information are available on the KODAMA website project [via](http://www.kodama-project.com/).
+This documentation introduces the usage of KODAMA. 
 
 
 ## 2	Installation
 
 ### 2.1 Installation via CRAN
 
-The R package KODAMA (current version 1.1) is part of the Comprehensive R Archive Network (CRAN)^[http://cran.r-project.org]. The simplest way to install the package is to enter the following command into your R session: `install.packages("KODAMA")`. We suggest to install the R package `rgl` for the data visualization in 3D interactive plots.
+The R package KODAMA (current version 1.1) is part of the Comprehensive R Archive Network (CRAN)^[https://cran.r-project.org/]. The simplest way to install the package is to enter the following command into your R session: `install.packages("KODAMA")`. We suggest to install the R package `rgl` for the data visualization in 3D interactive plots.
 
 ### 2.2 Manual installation from source
 
@@ -36,7 +36,7 @@ To compile the C/C++ code included in the package for customization or installat
 
 - Download KODAMA.tar.gz and save it to your hard disk
 - Open a shell/terminal/command prompt window and change to the desired directory for installation of KODAMA.tar.gz. Enter `R CMD INSTALL KODAMA.tar.gz` to install the package.
-Note that this may require additional software on some platforms. Windows requires Rtools^[http://developer.apple.com/technologies/tools] to be installed and to be available in the default search path (environment variable PATH). MAC OS X requires installation of Xcode developers and command line tools.
+Note that this may require additional software on some platforms. Windows requires Rtools^[https://developer.apple.com/xcode/] to be installed and to be available in the default search path (environment variable PATH). MAC OS X requires installation of Xcode developers and command line tools.
 
 
 ### 2.3 Compatibility issues
@@ -68,7 +68,7 @@ The function `swissroll` computes the Swiss Roll dataset of a given sample size.
     plot3d(x, col=rainbow(1000),box=FALSE,type="s",size=1)
 
 \begin{figure}[h]
-  \centerline{\includegraphics[width=8cm]{swissroll.pdf}}
+  \centerline{\includegraphics[width=8cm]{swissroll_new.pdf}}
   \caption{Three dimensional Swiss Roll dataset.}
   \label{fig:F1}
 \end{figure}
@@ -83,7 +83,7 @@ The function `dinisurface` computes the Ulisse Dini's surface dataset of a given
     plot3d(x, col=rainbow(1000),box=FALSE,type="s",size=1)
 
 \begin{figure}[h]
-  \centerline{\includegraphics[width=8cm]{dinisurface.pdf}}
+  \centerline{\includegraphics[width=8cm]{dinisurface_new.pdf}}
   \caption{Three dimensional Ulisse Dini's surface dataset.}
   \label{fig:F2}
 \end{figure}
@@ -98,7 +98,7 @@ The function `helicoid` computes the Helicoid dataset of a given sample size. Th
     plot3d(x, col=rainbow(1000),box=FALSE,type="s",size=1)
 
 \begin{figure}[h]
-  \centerline{\includegraphics[width=8cm]{helicoid.pdf}}
+  \centerline{\includegraphics[width=8cm]{helicoid_new.pdf}}
   \caption{Three dimensional Helicoid dataset.}
   \label{fig:F3}
 \end{figure}
@@ -118,7 +118,7 @@ The function `spirals` computes the Spirals dataset of a given sample size. The 
     plot(v4,col=rep(2:6,c(20,40,60,80,100)))
 
 \begin{figure}[h]
-  \centerline{\includegraphics[width=8cm]{spirals.pdf}}
+  \centerline{\includegraphics[width=8cm]{spirals_new.pdf}}
   \caption{Four different two dimensional Spirals datasets.}
   \label{fig:lle}
 \end{figure}

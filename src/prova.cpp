@@ -15,14 +15,9 @@
 
 #include "ANN/ANN.h"        // ANN library header
 #include "NN.h"             // ANN library header
-#include "svm.h"             // ANN library header
 #include <R.h>              // R header
 #include "RcppArmadillo.h"  // RcppArmadillo library header
 
-struct svm_parameter param;     
-struct svm_problem prob;        
-struct svm_model *model;
-struct svm_node *x_space;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
@@ -80,7 +75,7 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
   
   /* Error in distances */
   e = tot = 0.0;
-  for (j = 1; j < n; j++)
+  for (j = 1; j < n; j++){
     for (k = 0; k < j; k++) {
       d = dd[k * n + j];
       if (ISNAN(d)) continue;
@@ -94,6 +89,7 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
       //   if(d1 == 0) error("initial configuration has duplicates");
       e += (ee * ee / d);
     }
+  }
     e /= tot;
   // if (*trace) Rprintf("Initial stress        : %7.5f\n", e);
   epast = eprev = e;
@@ -132,7 +128,7 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
     
     /* Error in distances */
     e = 0.0;
-    for (j = 1; j < n; j++)
+    for (j = 1; j < n; j++){
       for (k = 0; k < j; k++) {
         d = dd[k * n + j];
         if (ISNAN(d)) continue;
@@ -144,6 +140,7 @@ void VR_sammon(double *dd, Sint *nn, Sint *kd, double *Y, Sint *niter,
         ee = d - sqrt(d1);
         e += (ee * ee / d);
       }
+    }
       e /= tot;
     if (e > eprev) {
       e = eprev;
@@ -185,11 +182,12 @@ arma::uvec which(LogicalVector x) {
 
   arma::uvec w(a);
   int counter=0;
-  for(int i = 0; i < x.size(); i++) 
+  for(int i = 0; i < x.size(); i++) {
     if(x[i] == 1){
       w[counter]=i;
       counter++;
     }
+  }
     return w;
 }
 
@@ -349,8 +347,8 @@ arma::mat floyd(arma::mat data){
   arma::mat A=data;
   for (i=0; i<n; i++)
     A(i,i) = 0;           
-  for (k=0; k<n; k++)
-    for (i=0; i<n; i++)
+  for (k=0; k<n; k++){
+    for (i=0; i<n; i++){
       for (j=0; j<n; j++){
         temp=A(i,k)+A(k,j);
         if (temp < A(i,j))
@@ -359,6 +357,8 @@ arma::mat floyd(arma::mat data){
           
         }
       }
+    }
+  }
       return A;
 }
 
@@ -955,9 +955,10 @@ List pls_kodama(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp,int 
 // [[Rcpp::export]]
 int unic(arma::mat x){
   int x_size=x.size();
-  for(int i=0;i<x_size;i++)
+  for(int i=0;i<x_size;i++){
     if(x(i)!=x(0))
       return 2;
+  }
     return 1;
 }
 
@@ -1126,9 +1127,10 @@ List optim_knn_r_cv(arma::mat x,arma::vec clmatrix,arma::ivec constrain,int ncom
     int a=1;
     
     int Ytrain_size=Ytrain.size();
-    for(int i=0;i<Ytrain_size;i++)
+    for(int i=0;i<Ytrain_size;i++){
       if(Ytrain(i)!=Ytrain(0))
         a=2;
+    }
       if(a==2){ 
         Xtrain=x.rows(w9);
         Xtest=x.rows(w1);
@@ -1217,9 +1219,10 @@ List optim_knn_c_cv(arma::mat x,arma::ivec clmatrix,arma::ivec constrain,int nco
     int a=1;
     
     int Ytrain_size=Ytrain.size();
-    for(int i=0;i<Ytrain_size;i++)
+    for(int i=0;i<Ytrain_size;i++){
       if(Ytrain(i)!=Ytrain(0))
         a=2;
+    }
       if(a==2){ 
         Xtrain=x.rows(w9);
         Xtest=x.rows(w1);
@@ -1893,473 +1896,3 @@ List another(arma::mat pptrain,arma::mat xtrain,
   
 }
 
-
-
-// [[Rcpp::export]]
-List svm_kodama(arma::mat Xtrain,arma::vec Ytrain,arma::mat Xtest,arma::ivec ncomp,int scaling,int svm_type, arma::mat parameter) {
-  Rcpp::checkUserInterrupt();
-    int ncomponents=ncomp.max();
-
-   
-    arma::mat Ytrain_transformed=as<arma::mat>(wrap(Ytrain));
-    if(svm_type==0) 
-      Ytrain_transformed=transformy(as<arma::ivec>(wrap(Ytrain)));
-   
-    int ncXtrain=Xtrain.n_cols;
-    int nrXtrain=Xtrain.n_rows; 
-    int nrXtest=Xtest.n_rows; 
-    int ncXtest_trans = Ytrain_transformed.n_cols;
-
-    
-    // PLS -------------------------------------------------------------------------
-
-    
-    // Scaling procedure -----------------------------------------------------------
-    
-    arma::mat mX=mean(Xtrain,0);
-    Xtrain.each_row()-=mX;
-    Xtest.each_row()-=mX;
-    arma::mat vX=variance(Xtrain); 
-    if(scaling==2){
-      Xtrain.each_row()/=vX;
-      Xtest.each_row()/=vX;  
-    }
-
-
-    //X=Xtrain
-    arma::mat X=Xtrain;
-    
-    //Y=Ytrain
-    arma::mat Y=Ytrain_transformed;
-    
-    // Y <- scale(Ytrain,center=TRUE,scale=FALSE)
-    arma::mat mY=mean(Ytrain_transformed,0);
-    Y.each_row()-=mY;
-    
-    // S <- crossprod(X,Y)
-    arma::mat S=trans(X)*Y;
-    
-    //  RR<-matrix(0,ncol=ncomponents,nrow=ncXtrain)
-    arma::mat RR(ncXtrain,ncomponents);
-    RR.zeros();
-    
-    //  PP<-matrix(0,ncol=ncomponents,nrow=ncXtrain)
-    arma::mat PP(ncXtrain,ncomponents);
-    PP.zeros();
-    
-    //  QQ<-matrix(0,ncol=ncomponents,nrow=ncXtest_trans)
-    arma::mat QQ(ncXtest_trans,ncomponents);
-    QQ.zeros();
-    
-    //  Ztrain<-matrix(0,ncol=ncomponents,nrow=nrXtrain)
-    arma::mat Ztrain(nrXtrain,ncomponents);
-    Ztrain.zeros();
-    
-    //  VV<-matrix(0,ncol=ncomponents,nrow=ncXtrain)
-    arma::mat VV(ncXtrain,ncomponents);
-    VV.zeros();
-    
-    //  UU<-matrix(0,ncol=ncomponents,nrow=nrXtrain)
-    arma::mat UU(nrXtrain,ncomponents);
-    UU.zeros();
-    
-    //  B<-matrix(0,ncol=ncXtest_trans,nrow=ncXtrain)
-    arma::cube B(ncXtrain,ncXtest_trans,ncomponents);
-    B.zeros();
-    
-
-    arma::mat qq;
-    arma::mat pp;
-    arma::mat svd_U;
-    arma::vec svd_s;
-    arma::mat svd_V;
-    arma::mat rr;
-    arma::mat tt;
-    arma::mat uu;
-    arma::mat vv;
-    
-    // for(a in 1:ncomponents){
-    for (int a=0; a<ncomponents; a++) {
-      //qq<-svd(S)$v[,1]
-      //rr <- S%*%qq
-      svd_econ(svd_U,svd_s,svd_V,S,"left");
-      rr=svd_U.col( 0 );
-      
-      // tt<-scale(X%*%rr,scale=FALSE)
-      tt=X*rr; 
-      arma::mat mtt=mean(tt,0);
-      tt.each_row()-=mtt;
-      
-      //tnorm<-sqrt(sum(tt*tt))
-      double tnorm=sqrt(sum(sum(tt%tt)));
-      
-      //tt<-tt/tnorm
-      tt/=tnorm;
-      
-      //rr<-rr/tnorm
-      rr/=tnorm;
-      
-      // pp <- crossprod(X,tt)
-      pp=trans(X)*tt;
-      
-      // qq <- crossprod(Y,tt)
-      qq=trans(Y)*tt;
-      
-      
-      //uu <- Y%*%qq
-      uu=Y*qq;
-      
-      //vv<-pp
-      vv=pp;
-      
-      if(a>0){
-        //vv<-vv-VV%*%crossprod(VV,pp)
-        vv-=VV*(trans(VV)*pp);
-        
-        
-        //uu<-uu-Ztrain%*%crossprod(Ztrain,uu)
-        uu-=Ztrain*(trans(Ztrain)*uu);
-      }
-      
-      //vv <- vv/sqrt(sum(vv*vv))
-      vv/=sqrt(sum(sum(vv%vv)));
-      
-      //S <- S-vv%*%crossprod(vv,S)
-      S-=vv*(trans(vv)*S);
-      
-      //RR[,a]=rr
-      RR.col(a)=rr;
-      Ztrain.col(a)=tt;
-      PP.col(a)=pp;
-      QQ.col(a)=qq;
-      VV.col(a)=vv;
-      UU.col(a)=uu;
-   
-      B.slice(a)=RR*trans(QQ);
-    } 
-
-    
-    arma::mat Rnorm1(ncomponents,ncomponents);
-    Rnorm1.zeros();
-    Rnorm1.diag()=sqrt(sum(RR%RR)); 
-    
-    arma::mat Rnorm2(ncomponents,ncomponents);
-    Rnorm2.zeros();
-    Rnorm2.diag()=1/sqrt(sum(RR%RR)); 
-    
-    
-    arma::mat wM=Rnorm1;
-    arma::mat wMi=Rnorm2;
-    
-    RR=RR*wMi;
-    Ztrain=Ztrain*wMi;
-    QQ=QQ*wM;
-    PP=PP*wM;
-    
-    arma::mat Ztest = Xtest*RR;
-    
-    
-    
-    
-    
-    
-    
-    
-    arma::mat mX1=mean(Ztrain,0);
-    Ztrain.each_row()-=mX1;
-    Ztest.each_row()-=mX1;
-    arma::mat vX1=variance(Ztrain); 
-
-      Ztrain.each_row()/=vX1;
-      Ztest.each_row()/=vX1;  
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-   
-    // ------------------------------------------------------------------------------
-    arma::mat Ypred(nrXtest,ncomp.n_elem*parameter.n_rows);
-    
-    for(unsigned int j_parameter=0;j_parameter<parameter.n_rows;j_parameter++){
-      param.svm_type = svm_type;
-      param.kernel_type = as< int >(wrap(parameter(j_parameter,0)));
-      param.degree = as< int >(wrap(parameter(j_parameter,1)));
-      param.gamma = as< double >(wrap(parameter(j_parameter,2)));
-      param.coef0 = as< double >(wrap(parameter(j_parameter,3)));
-      param.nu = 0.5;
-      param.cache_size = 100;
-      param.C = as< double >(wrap(parameter(j_parameter,4)));
-      param.eps = 0.001;
-      param.p = 0.1;
-      param.shrinking = 1;
-      param.probability = 0;
-      param.nr_weight = 0;
-      param.weight_label = NULL;
-      param.weight = NULL;
-      
-      
-      
-      for(unsigned int j=0;j<ncomp.n_elem;j++){
-        int ncomp_pred=ncomp(j);
-    
-        double* data  = Ztrain.memptr();
-        double* label = Ytrain.memptr();
-        double* query = Ztest.memptr();
-  
-        //Problem definition-------------------------------------------------------------
-        prob.l = nrXtrain;
-    
-        prob.y = Malloc(double,prob.l);
-        for(int i=0;i<prob.l;i++)   prob.y[i]=label[i];
- 
-        //This part i have trouble understanding
-        svm_node** x = Malloc(svm_node*,(nrXtrain+1));
-
-        //Trying to assign from matrix to svm_node training examples
-        for (int row = 0;row <nrXtrain; row++){
-          svm_node* x_space = Malloc(svm_node,ncomp_pred+1);
-          for (int col = 0;col < ncomp_pred;col++){
-            x_space[col].index = col;
-            x_space[col].value = data[row+nrXtrain*col]; //col+ncXtrain*row];
-          }
-          x_space[ncomp_pred].index = -1;      //Each row of properties should be terminated with a -1 according to the readme
-          x[row] = x_space;
-        }
-        prob.x = x;
-
-        //Train model---------------------------------------------------------------------
-        svm_model *model = svm_train(&prob,&param);
-  
-        for (int row = 0;row < nrXtest;row++){
-      
-          svm_node* testnode = Malloc(svm_node,ncomp_pred+1);
-          for (int col = 0;col < ncomp_pred;col++){
-            testnode[col].index = col;
-            testnode[col].value = query[row+nrXtest*col];
-          }
-          testnode[ncomp_pred].index = -1;      //Each row of properties should be terminated with a -1 according to the readme
-          
-          Ypred(row,j+(j_parameter*ncomp.n_elem)) = svm_predict(model,testnode);
-        }
-      }
-    }
-    svm_destroy_param(&param);
-    free(prob.y);
-    free(prob.x);
-    free(x_space);
-
-    arma::mat param(ncomp.n_elem*parameter.n_rows,6);
-    
-    unsigned int position;
-    for(unsigned int j_ncomp=0;j_ncomp<ncomp.n_elem;j_ncomp++){
-      for(unsigned int j_parameter=0;j_parameter<parameter.n_rows;j_parameter++){
-        position=j_ncomp*parameter.n_rows+j_parameter;
-        param(position,0)=ncomp(j_ncomp);
-        param(position,1)=parameter(j_parameter,0);
-        param(position,2)=parameter(j_parameter,1);
-        param(position,3)=parameter(j_parameter,2);
-        param(position,4)=parameter(j_parameter,3);
-        param(position,5)=parameter(j_parameter,4);
-      }
-    }
-    
-    return List::create(
-      Named("B") = B,
-      Named("Ypred")   = Ypred,
-      Named("P")       = PP,
-      Named("Q")       = QQ,
-      Named("Ztrain")  = Ztrain,
-      Named("R")       = RR,
-      Named("Xtest")   = Ztest,
-      Named("parameters")   = param
-    );
-}
-
-
-
-
-// [[Rcpp::export]]
-List optim_svm_cv(arma::mat xData,arma::vec yData,arma::ivec constrain,arma::ivec ncomp,int scaling,int svm_type, arma::mat parameter) {
-
-  int nsamples=xData.n_rows;
-  int nparameter=ncomp.n_elem*parameter.n_rows;
-  arma::mat Ypred(nsamples,nparameter);
-  arma::mat tparam(nparameter,6);
-
-  int xsa_t = max(constrain);
-  IntegerVector frame = seq_len(xsa_t);
-
-  IntegerVector v=samplewithoutreplace(frame,xsa_t);
-
-  
-  int mm=constrain.size();
-  arma::ivec fold(mm);
-  for (int i=0; i<mm; i++) 
-    fold[i]=v[constrain(i)-1]%10;
-  for (int i=0; i<10; i++) {
-    arma::uvec w1,w9;
-    arma::ivec temp;
-    arma::mat Xtrain,Xtest;
-    arma::mat Ytrain;
-    w1=find(fold==i);
-    w9=find(fold!=i);
-    int w1_size=w1.size();
-    if(unic(yData.elem(w9))==2){
-      Xtrain=xData.rows(w9);
-     
-      Xtest=xData.rows(w1);
-      Ytrain=yData.elem(w9);
- 
-      List svm_partial=svm_kodama(Xtrain,Ytrain,Xtest,ncomp,scaling,svm_type,parameter);
-
-      arma::mat temp1=svm_partial[1];
-      arma::mat tpar=svm_partial[7];
-    
-      tparam=tpar;
-      for(int ii=0;ii<w1_size;ii++)  
-        for(int kk=0;kk<nparameter;kk++) 
-          Ypred(w1[ii],kk)=temp1(ii,kk);  
-      
-    }else{
-      for(int ii=0;ii<w1_size;ii++)  
-        for(int kk=0;kk<nparameter;kk++)  
-          Ypred(w1[ii],kk)=yData(w1[0]);  
-    }
-    
-  }  
-  arma::vec Q2Y(nparameter);
-  for(int ii=0;ii<nparameter;ii++){
-    Q2Y(ii)=RQ(yData,Ypred.col(ii));
-    
-  }
-  double optQ2Y=Q2Y(0);
-  arma::mat optparam(1,6);
-  
-  for(int i=1;i<nparameter;i++)  if(Q2Y(i)>optQ2Y) {
-    optQ2Y=Q2Y(i);
-    optparam=tparam.row(i);
-  }
-  
-  
-  return List::create(
-    Named("Ypred")           = Ypred,
-    Named("Q2Y")             = Q2Y,
-    Named("parameters")      = tparam,
-    Named("optimized_Q2Y")   = optQ2Y,
-    Named("optimized_param") = optparam
-    
-  );
-}
-
-
-
-
-
-// [[Rcpp::export]]
-List svm_double_cv(arma::mat xData,arma::vec yData,arma::ivec constrain,arma::ivec ncomp,int scaling,int svm_type, arma::mat parameter,int timesCV) {
-  arma::mat optimized_parameters(1,5);
-  int nsamples=xData.n_rows;
-  int nparameter=ncomp.n_elem*parameter.n_rows;
-  arma::vec Q2y(timesCV),R2y(timesCV);
-  arma::mat tparam(nparameter,6),Ypred(nsamples,timesCV),Yfit(nsamples,timesCV);
-  arma::ivec optimized_ncomp;
-  int xsa_t = max(constrain);
-  IntegerVector frame = seq_len(xsa_t);
-  
-  for(int t=0;t<timesCV;t++){
-  
-    IntegerVector v=samplewithoutreplace(frame,xsa_t);
-
-  
-    int mm=constrain.size();
-    arma::ivec fold(mm);
-    for (int i=0; i<mm; i++) 
-      fold[i]=v[constrain(i)-1]%10;
-
-    for (int i=0; i<10; i++) {
-   
-      arma::uvec w1,w9;
-      arma::ivec temp;
-      arma::mat Xtrain,Xtest;
-      arma::mat Ytrain;
-      arma::ivec Ctrain;
-      w1=find(fold==i);
-      w9=find(fold!=i);
-      int w1_size=w1.size();
-      if(unic(yData.elem(w9))==2){
-        Xtrain=xData.rows(w9);
-    
-        Xtest=xData.rows(w1);
-        Ytrain=yData.elem(w9);
-        Ctrain=constrain.elem(w9);
-        
-        List optimizing=optim_svm_cv(Xtrain,Ytrain,Ctrain,ncomp,scaling,svm_type,parameter);
-      
-        arma::mat optimized_temp=optimizing[4];
-        
-        optimized_parameters(0,0)=optimized_temp(0,1);
-        optimized_parameters(0,1)=optimized_temp(0,2);
-        optimized_parameters(0,2)=optimized_temp(0,3);
-        optimized_parameters(0,3)=optimized_temp(0,4);
-        optimized_parameters(0,4)=optimized_temp(0,5);
-       
-        optimized_ncomp=as<arma::ivec>(wrap(optimized_temp(0,0)));
-     
-        List svm_fitting=svm_kodama(Xtrain,Ytrain,Xtest,optimized_ncomp,scaling,svm_type,optimized_parameters);
-        arma::mat temp1=svm_fitting[1];
-
-
-        for(int ii=0;ii<w1_size;ii++)  
-          Ypred(w1[ii],t)=temp1(ii,0);  
-
-      }else{
-        for(int ii=0;ii<w1_size;ii++)  
-          Ypred(w1[ii],t)=yData(w1[0]);  
-      }
-    }  
-
-    double Q2Yi=RQ(yData,Ypred.col(t));
-    Q2y(t)=Q2Yi;
-    
-    List optimizing=optim_svm_cv(xData,yData,constrain,ncomp,scaling,svm_type,parameter);
-    
-    arma::mat optimized_temp=optimizing[4];
-    
-    optimized_parameters(0,0)=optimized_temp(0,1);
-    optimized_parameters(0,1)=optimized_temp(0,2);
-    optimized_parameters(0,2)=optimized_temp(0,3);
-    optimized_parameters(0,3)=optimized_temp(0,4);
-    optimized_parameters(0,4)=optimized_temp(0,5);
-    
-    optimized_ncomp=as<arma::ivec>(wrap(optimized_temp(0,0)));
-    
-    List svm_partial=svm_kodama(xData,yData,xData,optimized_ncomp,scaling,svm_type,optimized_parameters);
-    arma::mat temp1=svm_partial[1];
-    arma::mat tpar=svm_partial[7];
-    
-    for(int ii=0;ii<nsamples;ii++)  
-      Yfit(ii,t)=temp1(ii,0); 
-    double R2Yi=RQ(yData,Yfit.col(t));
-    R2y(t)=R2Yi;
-    
-  }
-  return List::create(
-    Named("Ypred")           = Ypred,
-    Named("Q2Y")             = Q2y,
-    Named("Yfit")           = Yfit,
-    Named("R2Y")             = R2y
-//    Named("parameters")      = tparam,
-//    Named("optimized_Q2Y")   = optQ2Y,
-//    Named("optimized_param") = optparam
-    
-  );
-}

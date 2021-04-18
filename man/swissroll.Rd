@@ -34,7 +34,7 @@ Nonlinear dimensionality reduction by locally linear embedding.\cr
 \cr
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{https://www.pnas.org/content/111/14/5117}{Link}
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
@@ -49,7 +49,6 @@ require("rgl")
 x=swissroll()
 open3d()
 plot3d(x, col=rainbow(1000),box=FALSE,size=3)
-rgl.postscript("swissroll.pdf", fmt="pdf")
 }
 
 \keyword{dataset}

@@ -14,7 +14,7 @@ KODAMA(data,
         FUN_VAR = function(x) { ceiling(ncol(x)) },
         FUN_SAM = function(x) { ceiling(nrow(x) * 0.75)},
         bagging = FALSE, 
-        FUN = c("KNN","PLS-DA"), 
+        FUN = c("PLS-DA","KNN"), 
         f.par = 5, 
         W = NULL, 
         constrain = NULL, 
@@ -41,7 +41,7 @@ KODAMA(data,
   \item{bagging}{
   	Should sampling be with replacement, \code{bagging = TRUE}. By default \code{bagging = FALSE}.
 }
-  \item{FUN}{classifier to be considered. Choices are "\code{KNN}" and "\code{PLS-DA}".
+  \item{FUN}{classifier to be considered. Choices are "\code{PLS-DA}" and "\code{KNN}".
 }
 
   \item{f.par}{
@@ -69,7 +69,7 @@ KODAMA(data,
 }
 
 \details{
-KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, Sammon's non-linear mapping is used to visualise the results of KODAMA dissimilarity matrix. For additiona information, visit \href{http://www.kodama-project.com/}{http://www.kodama-project.com/}. 
+KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, Sammon's non-linear mapping is used to visualise the results of KODAMA dissimilarity matrix. 
 
 }
 
@@ -92,7 +92,7 @@ KODAMA consists of five steps. These can be in turn divided into two parts: (i) 
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{https://www.pnas.org/content/111/14/5117}{Link}
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
@@ -102,14 +102,14 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 
 
 
-
-
 \examples{
+\donttest{
 
-# data(iris)
-# data=iris[,-5]
-# labels=iris[,5]
-# kk=KODAMA(data)
-# plot(kk$pp,col=as.numeric(labels), xlab="First component", ylab="Second component",cex=2)
+ data(iris)
+ data=iris[,-5]
+ labels=iris[,5]
+ kk=KODAMA(data,FUN="KNN")
+ plot(kk$pp,col=as.numeric(labels), xlab="First component", ylab="Second component",cex=2)
 
+}
 }

@@ -21,7 +21,7 @@ The function returns a vector of values indicating the "importance" of each vari
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{https://www.pnas.org/content/111/14/5117}{Link}
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
@@ -30,15 +30,15 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 
 
 \seealso{\code{\link{KODAMA}}}
-
 \examples{
-# data(iris)
-# data=iris[,-5]
-# labels=iris[,5]
-# kk=KODAMA(data,FUN="PLS-DA")
-# loads(kk)
+\donttest{
+ data(iris)
+ data=iris[,-5]
+ labels=iris[,5]
+ kk=KODAMA(data,FUN="PLS-DA")
+ loads(kk)
 }
-
+}
 
 
 

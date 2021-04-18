@@ -1,70 +1,122 @@
-txtsummary = function(x,digits=0,scientific=FALSE){
+txtsummary = function (x, digits = 0, scientific = FALSE, range=c("IQR","95%CI")) 
+{
+  matchFUN=pmatch(range[1],c("IQR","95%CI"))
+  if(is.na(matchFUN))
+    stop("The range to be considered must be \"IQR\" or \"95%CI\".")
   
-  m=median(x,na.rm = TRUE)
-  ci=quantile(x,probs = c(0.025,0.975),na.rm = TRUE)
+  m = median(x, na.rm = TRUE)
   
-  if(scientific){
-    m=format(m,digits = digits,scientific = scientific)
-    ci=format(ci,digits = digits,scientific = scientific)
-  }else{
-    m=round(m,digits=digits)
-    ci=round(ci,digits=digits)
-    
+  if(matchFUN==1)
+    ci = quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
+  if(matchFUN==2)
+    ci = quantile(x, probs = c(0.025, 0.975), na.rm = TRUE)
+  if (scientific) {
+    m = format(m, digits = digits, scientific = scientific)
+    ci = format(ci, digits = digits, scientific = scientific)
   }
-  txt=paste(m," [",ci[1]," ",ci[2],"]",sep="")
+  else {
+    m = round(m, digits = digits)
+    ci = round(ci, digits = digits)
+  }
+  txt = paste(m, " [", ci[1], " ", ci[2], "]", sep = "")
   txt
 }
 
+
 #-----for numerical data 
-continuous_table = function(name,num, label, digits=0,scientific=FALSE){
-  ll=levels(label)
-  A=num[label==ll[1]]
-  B=num[label==ll[2]]
-  v=NULL
-  v[1]=paste(name,", median [95%CI]",sep="")
-  nn=length(unique(label))
-  
-  
-  if(nn==2){
-    pval=wilcox.test(num~label)$p.value
+continuous_table =
+  function (name, num, label, digits = 0, scientific = FALSE,range=c("IQR","95%CI"),logchange=FALSE) 
+  {
+    label=as.factor(label)
+    ll = levels(label)
+    A = num[label == ll[1]]
+    B = num[label == ll[2]]
+    
+    nn = length(levels(label))
+    v = data.frame()
+    v[1,1] = name
+    if (nn == 2) {
+      pval = wilcox.test(num ~ label)$p.value
+      fc = -log2(mean(A,na.rm = TRUE)/mean(B,na.rm = TRUE))
+    }
+    if (nn > 2) {
+      pval = kruskal.test(num ~ label)$p.value
+    }
+    if (nn > 1) {
+      v[1,2:(1 + nn)] = tapply(num, label, function(x) txtsummary(x, 
+                                                                  digits = digits, scientific = scientific,range=range))
+      v[1,nn + 2] = txtsummary(num, digits = digits, scientific = scientific)
+      v[1,nn + 3] = format(pval,digits = 3,scientific = TRUE)
+    }else {
+      v[1,nn + 3] = NA
+    }
+    matchFUN=pmatch(range[1],c("IQR","95%CI"))
+    if(matchFUN==1){
+      names(v) = c("Feature", 
+                   paste(levels(label), ", median [IQR]", sep = ""), 
+                   "Total, median [IQR]", "p-value")
+    }
+    if(matchFUN==2){
+      names(v) = c("Feature", 
+                   paste(levels(label), ", median [95%CI]", sep = ""), 
+                   "Total, median [95%CI]", "p-value")
+    }
+    v[v=="NA [NA NA]"]="-"
+    if(logchange==TRUE){
+      v=cbind(v,logchange=round(fc,digits=2))
+      list(text=v,pvalue=pval,logchange=fc)
+    }else{
+      list(text=v,pvalue=pval)
+    }
   }
-  if(nn>2){
-    pval=kruskal.test(num~label)$p.value
+
+multi_continuous_table =
+  function (data, label, digits = 0, scientific = FALSE,range=c("IQR","95%CI"),logchange=FALSE) {
+    
+    da=NULL
+    pval=NULL
+    for(i in 1:ncol(data)){
+      
+      temp=continuous_table(digits = digits,name=colnames(data)[i],scientific=scientific,
+                            num=data[,i],label=label,logchange=logchange)
+      da=rbind(da,temp$text)
+      pval[i]=temp$pvalue
+    }
+    FDR=p.adjust(pval,method="fdr")
+    FDR=format(FDR,digits = 3,scientific = TRUE)
+    da=cbind(da,FDR)
+    da
   }
-  if(nn>1){
-    v[2:(1+nn)]=tapply(num,label,function(x) txtsummary(x,digits = digits,scientific = scientific))
-    v[nn+2]=txtsummary(num,digits = digits,scientific = scientific)
-    v[nn+3]=format(pval,digits = 3,scientific = TRUE)
-  }else{
-    v[nn+3]="only 1 group"
-  }
-  names(v)=c("Feature",unique(label),"Total","p-value")
-  v
-}
 
 #-----for categorical data 
-categorical_table  = function(name,cat,label){
-  nn=length(unique(label))
-  t0=table(cat,label)
-  ta=cbind(t0,as.matrix(table(cat)))
-  tb=sprintf("%.1f",t(t(ta)/colSums(ta))*100)
-  tc=matrix(paste(ta," (",tb,")",sep=""),ncol=nn+1)
-  if(nrow(t0)==1){
-    pvalue=""
-  }else{
-    pvalue=format(fisher.test(ta,workspace = 10^7)$p.value,digits = 3,scientific = TRUE)
+categorical_table =
+  function (name, cat, label) 
+  {
+    label=as.factor(label)
+    nn=length(levels(label))
+    t0=table(cat,label)
+    ta=cbind(t0,as.matrix(table(cat)))
+    tb=sprintf("%.1f",t(t(ta)/colSums(ta))*100)
+    tc=matrix(paste(ta," (",tb,")",sep=""),ncol=nn+1)
+    tc[,c(colSums(t0),-1)==0]="-"
+    v=NULL
+    if(nrow(t0)==1){
+      pvalue=NA
+      v[nn+3]=""
+    }else{
+      pvalue=fisher.test(t0,workspace = 10^7)$p.value
+      v[nn+3]=format(pvalue,digits = 3,scientific = TRUE)
+    }
+    v[1]=name
+    group=paste("   ",rownames(ta),", n (%)",sep="")
+    cc=cbind(group,tc,rep(NA,length(group)))
+    cc=rbind(v,cc)
+    colnames(cc)=c("Feature",colnames(t0),"Total","p-value")
+    cc[is.na(cc)]=""
+    list(text=cc,pvalue=pvalue)
   }
-  v=NULL
-  
-  v[1]=name
-  v[nn+3]=pvalue
-  group=paste("   ",rownames(ta),", n (%)",sep="")
-  cc=cbind(group,tc,rep(NA,length(group)))
-  cc=rbind(v,cc)
-  colnames(cc)=c("Feature",colnames(t0),"Total","p-value")
-  cc[is.na(cc)]=""
-  cc
-}
+
+
 
 
 
@@ -129,7 +181,7 @@ KODAMA=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
   ceiling(ncol(x))
 }, FUN_SAM = function(x) {
   ceiling(nrow(x) * 0.75)
-}, bagging = FALSE, FUN = c("KNN","PLS-DA"), f.par = 5, 
+}, bagging = FALSE, FUN = c("PLS-DA","KNN"), f.par = 5, 
 W = NULL, constrain = NULL, fix=NULL, 
 epsilon = 0.05,dims=2,landmarks=5000) 
 {
@@ -488,7 +540,7 @@ core_cpp <- function(x,
                      xTdata=NULL,
                      clbest, 
                      Tcycle=20, 
-                     FUN=c("KNN","PLS-DA"), 
+                     FUN=c("PLS-DA","KNN"), 
                      fpar=2, 
                      constrain=NULL, 
                      fix=NULL, 
@@ -506,6 +558,8 @@ core_cpp <- function(x,
     proj=2
   }
   matchFUN=pmatch(FUN[1],c("KNN","PLS-DA"))
+  if(is.na(matchFUN))
+    stop("The classifier to be considered must be  \"PLS-DA\" or \"KNN\".")
   
   out=corecpp(x, xTdata,clbest, Tcycle, matchFUN, fpar, constrain, fix, shake,proj)
   return(out)
@@ -595,7 +649,6 @@ pls.double.cv = function(Xdata,
       res$p.value=pval
       
     }
-
   
   }else{
 

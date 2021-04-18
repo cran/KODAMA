@@ -7,18 +7,19 @@
 \description{Summarization of a numeric vector.}
 
 \usage{
-txtsummary (x,digits=0,scientific=FALSE)
+txtsummary (x,digits=0,scientific=FALSE,range=c("IQR","95\%CI"))
 }
 
 \arguments{
   \item{x}{a numeric vector.}
   \item{digits}{how many significant digits are to be used.}
   \item{scientific}{either a logical specifying whether result should be encoded in scientific format.}
+  \item{range}{the range to be visualized.}
 
 }
 
 \value{
-    The function returns the median and the 95\% coefficient interval of numeric vetor.
+    The function returns the median and the range (interquartile or 95\% coefficient interval) of numeric vetor.
   }
 
 \author{Stefano Cacciatore}
@@ -26,7 +27,7 @@ txtsummary (x,digits=0,scientific=FALSE)
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
 Knowledge discovery by accuracy maximization.\cr
-\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{http://www.pnas.org/content/111/14/5117}{Link}
+\emph{Proc Natl Acad Sci U S A} 2014;111(14):5117-22. doi: 10.1073/pnas.1220873111. \href{https://www.pnas.org/content/111/14/5117}{Link}
 \cr	\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr

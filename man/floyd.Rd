@@ -18,9 +18,11 @@ floyd(data)
 \references{
 Floyd, Robert W	\cr
 Algorithm 97: Shortest Path.\cr
-\emph{Communications of the ACM} 1962; 5 (6): 345. doi:10.1145/367766.368168. \href{https://dl.acm.org/citation.cfm?doid=367766.368168}{Link}
+\emph{Communications of the ACM} 1962; 5 (6): 345. doi:10.1145/367766.368168. \href{https://dl.acm.org/doi/10.1145/367766.368168}{Link}
 }
 
+
+ 
 
 
 \examples{
