@@ -12,7 +12,7 @@
 \usage{data(clinical)}
 
 \value{
-The data.frame "\code{prcomp}" with the following elements: "\code{Hospital}", "\code{Gender}", "\code{Gleason score}", "\code{Ethnicity}", "\code{BMI}", and "\code{Age}".
+The data.frame "\code{prcomp}" with the following elements: "\code{Hospital}", "\code{Gender}", "\code{Gleason score}",  "\code{BMI}", and "\code{Age}".
 }
 
 \examples{

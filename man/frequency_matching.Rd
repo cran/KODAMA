@@ -45,33 +45,33 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \examples{
 data(clinical)
 
-A=categorical_table("Gender",clinical[,"Gender"],clinical[,"Hospital"])
-B=categorical_table("Gleason score",clinical[,"Gleason score"],clinical[,"Hospital"])
-C=categorical_table("Ethnicity",clinical[,"Ethnicity"],clinical[,"Hospital"])
 
-D=continuous_table("BMI",clinical[,"BMI"],clinical[,"Hospital"],digits=2)
-E=continuous_table("Age",clinical[,"Age"],clinical[,"Hospital"],digits=1)
+A=categorical.test("Gender",clinical[,"Gender"],clinical[,"Hospital"])
+B=categorical.test("Gleason score",clinical[,"Gleason score"],clinical[,"Hospital"])
+
+C=continuous.test("BMI",clinical[,"BMI"],clinical[,"Hospital"],digits=2,pos=2)
+D=continuous.test("Age",clinical[,"Age"],clinical[,"Hospital"],digits=1,pos=2)
+
 
 # Analysis without matching
-rbind(A,B,C,D,E)
+rbind(A,B,C,D)
 
 
 
 # The order is important. Right is more important than left in the vector
 # So, Ethnicity will be more important than Age
-var=c("Age","BMI","Gleason score" ,"Ethnicity")
+var=c("Age","BMI","Gleason score")
 t=frequency_matching(clinical[,var],clinical[,"Hospital"],times=1)
 
 newdata=clinical[t$selection,]
 
-A=categorical_table("Gender",newdata[,"Gender"],newdata[,"Hospital"])
-B=categorical_table("Gleason score",newdata[,"Gleason score"],newdata[,"Hospital"])
-C=categorical_table("Ethnicity",newdata[,"Ethnicity"],newdata[,"Hospital"])
+A=categorical.test("Gender",newdata[,"Gender"],newdata[,"Hospital"])
+B=categorical.test("Gleason score",newdata[,"Gleason score"],newdata[,"Hospital"])
 
-D=continuous_table("BMI",newdata[,"BMI"],newdata[,"Hospital"],digits=2)
-E=continuous_table("Age",newdata[,"Age"],newdata[,"Hospital"],digits=1)
+C=continuous.test("BMI",newdata[,"BMI"],newdata[,"Hospital"],digits=2,pos=2)
+D=continuous.test("Age",newdata[,"Age"],newdata[,"Hospital"],digits=1,pos=2)
 
 # Analysis with matching
-rbind(A,B,C,D,E)
+rbind(A,B,C,D)
 
 }

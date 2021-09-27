@@ -1,27 +1,22 @@
-\name{multi_continuous_table}
+\name{multi_analysis}
 
-\alias{multi_continuous_table}
+\alias{multi_analysis}
 
 \title{Continuous Information}
 
 \description{Summarization of the continuous information.}
 
 \usage{
-multi_continuous_table (data, 
-                        label, 
-                        digits = 0, 
-                        scientific = FALSE,
-                        range=c("IQR","95\%CI"),
-                        logchange=FALSE)                   
+multi_analysis  (data, 
+                 y, 
+                 FUN=c("continuous.test","correlation.test"), ...)                 
 }
 
 \arguments{
   \item{data}{the matrix containing the continuous values. Each row corresponds to a different sample. Each column corresponds to a different variable.}
-  \item{label}{the classification of the cohort.}
-  \item{digits}{how many significant digits are to be used.}
-  \item{scientific}{either a logical specifying whether result should be encoded in scientific format.}
-  \item{range}{the range to be visualized.}
-  \item{logchange}{either a logical specifying whether log2 of fold change  should be visualized.}
+  \item{y}{the classification of the cohort.}
+  \item{FUN}{function to be considered. Choices are "\code{continuous.test}" and "\code{correlation.test}"}
+  \item{...}{further arguments to be passed to or from methods.}
 }
 
 \value{
@@ -38,13 +33,13 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 }
 \author{Stefano Cacciatore}
 
-  \seealso{\code{\link{continuous_table}}, \code{\link{categorical_table}}, \code{\link{txtsummary}}}
+  \seealso{\code{\link{categorical.test}},\code{\link{continuous.test}},\code{\link{correlation.test}}, \code{\link{txtsummary}}}
 
 \examples{
 data(clinical)
 
 
-multi_continuous_table(data=clinical[,c("BMI","Age")],digits = 1,label=clinical[,"Hospital"])
+multi_analysis(clinical[,c("BMI","Age")],clinical[,"Hospital"],FUN="continuous.test")
 
 }
-\keyword{multi_continuous_table}
+\keyword{multi_analysis}

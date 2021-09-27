@@ -23,101 +23,197 @@ txtsummary = function (x, digits = 0, scientific = FALSE, range=c("IQR","95%CI")
 }
 
 
-#-----for numerical data 
-continuous_table =
-  function (name, num, label, digits = 0, scientific = FALSE,range=c("IQR","95%CI"),logchange=FALSE) 
-  {
-    label=as.factor(label)
-    ll = levels(label)
-    A = num[label == ll[1]]
-    B = num[label == ll[2]]
-    
-    nn = length(levels(label))
-    v = data.frame()
-    v[1,1] = name
-    if (nn == 2) {
-      pval = wilcox.test(num ~ label)$p.value
-      fc = -log2(mean(A,na.rm = TRUE)/mean(B,na.rm = TRUE))
-    }
-    if (nn > 2) {
-      pval = kruskal.test(num ~ label)$p.value
-    }
-    if (nn > 1) {
-      v[1,2:(1 + nn)] = tapply(num, label, function(x) txtsummary(x, 
-                                                                  digits = digits, scientific = scientific,range=range))
-      v[1,nn + 2] = txtsummary(num, digits = digits, scientific = scientific)
-      v[1,nn + 3] = format(pval,digits = 3,scientific = TRUE)
-    }else {
-      v[1,nn + 3] = NA
-    }
-    matchFUN=pmatch(range[1],c("IQR","95%CI"))
-    if(matchFUN==1){
-      names(v) = c("Feature", 
-                   paste(levels(label), ", median [IQR]", sep = ""), 
-                   "Total, median [IQR]", "p-value")
-    }
-    if(matchFUN==2){
-      names(v) = c("Feature", 
-                   paste(levels(label), ", median [95%CI]", sep = ""), 
-                   "Total, median [95%CI]", "p-value")
-    }
-    v[v=="NA [NA NA]"]="-"
-    if(logchange==TRUE){
-      v=cbind(v,logchange=round(fc,digits=2))
-      list(text=v,pvalue=pval,logchange=fc)
+multi_analysis = function (data, 
+                           y, 
+                           FUN=c("continuous.test","correlation.test"), ...) 
+{
+  
+  matchFUN = pmatch(FUN[1], c("continuous.test", "correlation.test"))
+  if (is.na(matchFUN)) 
+    stop("The function to be considered must be  \"continuous.test\" or \"correlation.test\".")
+  
+  if(matchFUN==1){
+    FUN=continuous.test
+  }
+  if(matchFUN==2){
+    FUN=correlation.test
+  }
+  
+  da = NULL
+  pval = NULL
+  for (i in 1:ncol(data)) {
+    sel.na=!is.na(data[, i])
+    if(sum(sel.na)>5){
+      temp = FUN(name = colnames(data)[i], x = data[sel.na, i], y = y[sel.na], ...)
+      da = rbind(da, temp$text)
+      pval[i] = temp$p.value
     }else{
-      list(text=v,pvalue=pval)
+      da = rbind(da, c(colnames(data)[i],NA,NA))
+      pval[i] = NA
     }
   }
+  FDR = p.adjust(pval, method = "fdr")
+  FDR = format(FDR, digits = 3, scientific = TRUE)
+  da = cbind(da, FDR)
+  da
+}
+#-----for numerical data 
 
-multi_continuous_table =
-  function (data, label, digits = 0, scientific = FALSE,range=c("IQR","95%CI"),logchange=FALSE) {
-    
-    da=NULL
-    pval=NULL
-    for(i in 1:ncol(data)){
-      
-      temp=continuous_table(digits = digits,name=colnames(data)[i],scientific=scientific,
-                            num=data[,i],label=label,logchange=logchange)
-      da=rbind(da,temp$text)
-      pval[i]=temp$pvalue
-    }
-    FDR=p.adjust(pval,method="fdr")
-    FDR=format(FDR,digits = 3,scientific = TRUE)
-    da=cbind(da,FDR)
-    da
+continuous.test = function (name,
+                            x,    
+                            y,
+                            digits = 3,
+                            scientific = FALSE, 
+                            range = c("IQR","95%CI"), 
+                            logchange = TRUE,pos=1,...) 
+{
+  y = as.factor(y)
+  ll = levels(y)
+  A = x[y == ll[1]]
+  B = x[y == ll[2]]
+  nn = length(levels(y))
+  v = data.frame()
+  v[1, 1] = name
+  if (nn == 2) {
+    pval = wilcox.test(x ~ y)$p.value
+    fc = -log2(mean(A, na.rm = TRUE)/mean(B, na.rm = TRUE))
   }
+  if (nn > 2) {
+    pval = kruskal.test(x ~ y)$p.value
+    logchange=FALSE
+  }
+  if (nn > 1) {
+    v[1, 2:(1 + nn)] = tapply(x, y, function(x) txtsummary(x, 
+                                                           digits = digits, scientific = scientific, range = range))
+    v[1, nn + 2] = txtsummary(x, digits = digits, scientific = scientific)
+    v[1, nn + 3] = format(pval, digits = 3, scientific = TRUE)
+  }
+  else {
+    v[1, nn + 3] = NA
+  }
+  
+  
+  matchFUN = pmatch(range[1], c("IQR", "95%CI"))
+  if(pos==1){
+    
+    if (matchFUN == 1) {
+      names(v) = c("Feature", paste(levels(y), ", median [IQR]", 
+                                    sep = ""), "Total, median [IQR]", "p-value")
+    }
+    if (matchFUN == 2) {
+      names(v) = c("Feature", paste(levels(y), ", median [95%CI]", 
+                                    sep = ""), "Total, median [95%CI]", "p-value")
+    }
+  }else{
+    
+    if (matchFUN == 1) {
+      v[1, 1] =  paste(name, ", median [IQR]",sep = "")
+    }
+    if (matchFUN == 2) {
+      v[1, 1] = paste(name, ", median [95%CI]",sep = "")
+    }
+    names(v) = c("Feature", levels(y), "Total", "p-value")
+  }
+  v[v == "NA [NA NA]"] = "-"
+  if (logchange == TRUE) {
+    v = cbind(v[1, 1:(nn + 2)], logchange = round(fc, digits = 2),v[1, (nn + 3)])
+    names(v)[nn + 4]="p-value"
+    list(text = v, p.value = pval, logchange = fc)
+  }
+  else {
+    list(text = v, p.value = pval)
+  }
+}
 
 #-----for categorical data 
-categorical_table =
-  function (name, cat, label) 
+categorical.test = 
+  function (name, x, y) 
   {
-    label=as.factor(label)
-    nn=length(levels(label))
-    t0=table(cat,label)
-    ta=cbind(t0,as.matrix(table(cat)))
-    tb=sprintf("%.1f",t(t(ta)/colSums(ta))*100)
-    tc=matrix(paste(ta," (",tb,")",sep=""),ncol=nn+1)
-    tc[,c(colSums(t0),-1)==0]="-"
-    v=NULL
-    if(nrow(t0)==1){
-      pvalue=NA
-      v[nn+3]=""
-    }else{
-      pvalue=fisher.test(t0,workspace = 10^7)$p.value
-      v[nn+3]=format(pvalue,digits = 3,scientific = TRUE)
+    y = as.factor(y)
+    nn = length(levels(y))
+    t0 = table(x, y)
+    ta = cbind(t0, as.matrix(table(x)))
+    tb = sprintf("%.1f", t(t(ta)/colSums(ta)) * 100)
+    tc = matrix(paste(ta, " (", tb, ")", sep = ""), 
+                ncol = nn + 1)
+    tc[, c(colSums(t0), -1) == 0] = "-"
+    v = NULL
+    if (nrow(t0) == 1) {
+      p.value = NA
+      v[nn + 3] = ""
     }
-    v[1]=name
-    group=paste("   ",rownames(ta),", n (%)",sep="")
-    cc=cbind(group,tc,rep(NA,length(group)))
-    cc=rbind(v,cc)
-    colnames(cc)=c("Feature",colnames(t0),"Total","p-value")
-    cc[is.na(cc)]=""
-    list(text=cc,pvalue=pvalue)
+    else {
+      p.value = fisher.test(t0, workspace = 10^7)$p.value
+      v[nn + 3] = format(p.value, digits = 3, scientific = TRUE)
+    }
+    v[1] = name
+    group = paste("   ", rownames(ta), ", n (%)", 
+                  sep = "")
+    cc = cbind(group, tc, rep(NA, length(group)))
+    cc = rbind(v, cc)
+    colnames(cc) = c("Feature", colnames(t0), "Total", 
+                     "p-value")
+    cc[is.na(cc)] = ""
+    list(text = cc, p.value = p.value)
   }
 
 
 
+
+
+correlation.test= function(x,y,method = c("pearson", "spearman","MINE"), name=NA, perm=100 , ...){
+  matchFUN = pmatch(method[1], c("pearson", "spearman","MINE"))
+  if (is.na(matchFUN)) 
+    stop("The method to be considered must be  \"pearson\", \"spearman\" or \"MINE\".")
+  res=list()
+  sel=!is.na(x) & !is.na(y)
+  x=x[sel]
+  y=y[sel]
+  
+  res$text = data.frame()
+  res$text[1, 1] = name
+  res$text[1,2]=NA
+  res$text[1,3]=NA
+  if(length(x)<5){
+    warning("The number of correlated elements is less than 5.")
+    res$estimate=NA
+    res$p.value=NA
+    
+  }else{
+    if(matchFUN==1){
+      temp=cor.test(x,y,method="pearson")
+      res$estimate=temp$estimate
+      res$p.value=temp$p.value
+    }
+    if(matchFUN==2){
+      temp=cor.test(x,y,method="spearman")
+      res$estimate=temp$estimate
+      res$p.value=temp$p.value
+    }
+    if(matchFUN==3){
+      res$estimate=mine(x,y)$MIC
+      v=NULL
+      for(i in 1:perm){
+        v[i]=mine(x,sample(y))$MIC
+      }
+      res$p.value=pnorm(res$estimate, mean = mean(v), sd = sqrt(((length(v) - 
+                                                                    1)/length(v)) * var(v)), lower.tail = FALSE)
+    }
+    res$text[1,2]=round(res$estimate,digits=2)
+    res$text[1,3]=format(res$p.value, digits = 3, scientific = TRUE)
+  }
+  if(matchFUN==1){
+    names(res$text)=c("Feature","r","p-value")
+  }  
+  if(matchFUN==2){
+    names(res$text)=c("Feature","rho","p-value")
+  }  
+  if(matchFUN==3){
+    names(res$text)=c("Feature","MIC","p-value")
+  }
+  
+  return(res)
+}
 
 
 
@@ -405,7 +501,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
   prox = Edist/mam
   diag(prox) = 1
   prox[is.na(prox)] = 0
-  maxvalue=max(mam, na.rm = T)
+  maxvalue=max(mam, na.rm = TRUE)
   mam[is.na(mam)] = maxvalue
   mam = as.dist(mam)
   
@@ -419,7 +515,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
   
   if(LMARK){
     pp=matrix(nrow=nsample,ncol=dims)
-    mimi=min(mam[mam!=0],na.rm = T)
+    mimi=min(mam[mam!=0],na.rm = TRUE)
 
     pp_landpoints=samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
 
@@ -432,7 +528,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     total_res[,landpoints]=res
     total_res[,-landpoints]=vect_proj;
   }else{
-    mimi=min(mam[mam!=0],na.rm = T)
+    mimi=min(mam[mam!=0],na.rm = TRUE)
 
     pp_landpoints=samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
     pp=pp_landpoints
@@ -519,7 +615,7 @@ loads = function (model,method=c("loadings","kruskal.test"))
          red.out[i, ] = apply(model$data,2,function(x) -log(kruskal.test(x[na.clu],as.factor(clu))$p.value))
     }
   }
-  colMeans(abs(red.out), na.rm = T)
+  colMeans(abs(red.out), na.rm = TRUE)
 }
 
 
@@ -602,7 +698,7 @@ pls.double.cv = function(Xdata,
       o$conf=table(o$Ypred,Ydata)
       o$acc=(sum(diag(o$conf))*100)/length(Ydata)
       o$Yfit=factor(lev[o$Yfit],levels=lev)
-      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,T,T)^2)
+      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,TRUE,TRUE)^2)
       Q2Y[j]=o$Q2Y
       R2Y[j]=o$R2Y
       res$results[[j]]=o
@@ -614,7 +710,7 @@ pls.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bcomp=floor(median(bcomp,na.rm = T))
+    res$bcomp=floor(median(bcomp,na.rm = TRUE))
     
     bb=NULL;for(h in 1:runn) bb[h]=res$results[[h]]$bcomp
     run = which(bb==res$bcomp)[1]
@@ -658,7 +754,7 @@ pls.double.cv = function(Xdata,
       bcomp[j]=o$bcomp
       o$Yfit=as.numeric(o$Yfit)
       o$Ypred=as.numeric(o$Ypred)
-      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,T,T)^2)
+      o$R2X=diag((t(o$T)%*%(o$T))%*%(t(o$P)%*%(o$P)))/sum(scale(Xdata,TRUE,TRUE)^2)
       Q2Y[j]=o$Q2Y
       R2Y[j]=o$R2Y
       res$results[[j]]=o
@@ -670,7 +766,7 @@ pls.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bcomp=floor(median(bcomp,na.rm = T))
+    res$bcomp=floor(median(bcomp,na.rm = TRUE))
     
     
     bb=NULL;for(h in 1:runn) bb[h]=res$results[[h]]$bcomp
@@ -763,7 +859,7 @@ knn.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bk=floor(median(bk,na.rm = T))
+    res$bk=floor(median(bk,na.rm = TRUE))
     
     mpred=matrix(ncol=runn,nrow=nrow(Xdata));
     for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
@@ -817,7 +913,7 @@ knn.double.cv = function(Xdata,
     res$CI95R2Y=as.numeric(quantile(R2Y,c(0.025,0.975)))
     res$medianQ2Y=median(Q2Y)
     res$CI95Q2Y=as.numeric(quantile(Q2Y,c(0.025,0.975)))
-    res$bk=floor(median(bk,na.rm = T))
+    res$bk=floor(median(bk,na.rm = TRUE))
     
     mpred=matrix(ncol=runn,nrow=nrow(Xdata));
     for(h in 1:runn) mpred[,h]= as.vector(res$results[[h]]$Ypred)
@@ -1026,13 +1122,13 @@ vis.KODAMA =
     prox = Edist/mam
     diag(prox) = 1
     prox[is.na(prox)] = 0
-    maxvalue = max(mam, na.rm = T)
+    maxvalue = max(mam, na.rm = TRUE)
     mam[is.na(mam)] = maxvalue
     mam = as.dist(mam)
     
     if (LMARK) {
       pp = matrix(nrow = nsample, ncol = dims)
-      mimi = min(mam[mam != 0], na.rm = T)
+      mimi = min(mam[mam != 0], na.rm = TRUE)
       pp_landpoints = samm((mam + runif(length(mam)) * mimi/1e+06), 
                            k = dims)$points
       pr = another(pp_landpoints, Xdata_landpoints, Tdata, 

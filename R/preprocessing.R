@@ -7,17 +7,17 @@ normalization = function (Xtrain, Xtest = NULL, method = "pqn", ref = NULL)
   if (is.na(method)) 
     stop("invalid normalization method")
   if (method == 1) {
-    rSXtrain = rowSums(abs(Xtrain), na.rm = T)
+    rSXtrain = rowSums(abs(Xtrain), na.rm = TRUE)
     Xtrain = Xtrain/rSXtrain
     if (is.null(ref)) 
-      ref = apply(Xtrain, 2, median, na.rm = T)
+      ref = apply(Xtrain, 2, median, na.rm = TRUE)
     newXtrain = t(t(Xtrain)/ref)
-    coeXtrain = apply(newXtrain, 1, median, na.rm = T)
+    coeXtrain = apply(newXtrain, 1, median, na.rm = TRUE)
     if (!is.null(Xtest)) {
-      rSXtest = rowSums(abs(Xtest), na.rm = T)
+      rSXtest = rowSums(abs(Xtest), na.rm = TRUE)
       Xtest = Xtest/rSXtest
       newXtest = t(t(Xtest)/ref)
-      coeXtest = apply(newXtest, 1, median, na.rm = T)
+      coeXtest = apply(newXtest, 1, median, na.rm = TRUE)
       return(list(newXtrain = Xtrain/coeXtrain, coeXtrain = coeXtrain * 
                     rSXtrain, newXtest = Xtest/coeXtest, coeXtest = coeXtest * 
                     rSXtest))
@@ -29,7 +29,7 @@ normalization = function (Xtrain, Xtest = NULL, method = "pqn", ref = NULL)
     w1 = apply(Xtrain, 1, sum)
     data_train = Xtrain/w1
     if (!is.null(Xtest)) {
-      w2 = apply(Xtest, 1, function(x) sum(abs(x), na.rm = T))
+      w2 = apply(Xtest, 1, function(x) sum(abs(x), na.rm = TRUE))
       data_test = Xtest/w2
       return(list(newXtrain = data_train, coeXtrain = w1, 
                   newXtest = data_test, coeXtest = w2))
@@ -40,7 +40,7 @@ normalization = function (Xtrain, Xtest = NULL, method = "pqn", ref = NULL)
     w1 = apply(Xtrain, 1, median)
     data_train = Xtrain/w1
     if (!is.null(Xtest)) {
-      w2 = apply(Xtest, 1, function(x) median(x, na.rm = T))
+      w2 = apply(Xtest, 1, function(x) median(x, na.rm = TRUE))
       data_test = Xtest/w2
       return(list(newXtrain = data_train, coeXtrain = w1, 
                   newXtest = data_test, coeXtest = w2))
@@ -51,7 +51,7 @@ normalization = function (Xtrain, Xtest = NULL, method = "pqn", ref = NULL)
     w1 = apply(Xtrain, 1, function(x) sqrt(sum(x^2)))
     data_train = Xtrain/w1
     if (!is.null(Xtest)) {
-      w2 = apply(Xtest, 1, function(x) sqrt(sum(x^2, na.rm = T)))
+      w2 = apply(Xtest, 1, function(x) sqrt(sum(x^2, na.rm = TRUE)))
       data_test = Xtest/w2
       return(list(newXtrain = data_train, coeXtrain = w1, 
                   newXtest = data_test, coeXtest = w2))
@@ -94,25 +94,25 @@ scaling = function (Xtrain, Xtest = NULL, method = "autoscaling")
   if (!is.null(Xtest)) {
     w2 = rep(1, nrow(Xtest))
     if (method == 2) {
-      Xtrain <- scale(Xtrain, center = T, scale = F)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = FALSE)
       Xtest <- scale(Xtest, center = attr(Xtrain, "scaled:center"), 
-                     scale = F)
+                     scale = FALSE)
       return(list(newXtrain = Xtrain, newXtest = Xtest))
     }
     if (method == 3) {
-      Xtrain <- scale(Xtrain, center = T, scale = T)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = TRUE)
       Xtest <- scale(Xtest, center = attr(Xtrain, "scaled:center"), 
                      scale = attr(Xtrain, "scaled:scale"))
     }
     if (method == 4) {
       ran <- apply(Xtrain, 2, function(x) max(x) - min(x))
-      Xtrain <- scale(Xtrain, center = T, scale = ran)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = ran)
       Xtest <- scale(Xtest, center = attr(Xtrain, "scaled:center"), 
                      scale = ran)
     }
     if (method == 5) {
       ssd <- sqrt(apply(Xtrain, 2, sd))
-      Xtrain <- scale(Xtrain, center = T, scale = ssd)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = ssd)
       Xtest <- scale(Xtest, center = attr(Xtrain, "scaled:center"), 
                      scale = ssd)
     }
@@ -120,18 +120,18 @@ scaling = function (Xtrain, Xtest = NULL, method = "autoscaling")
   }
   else {
     if (method == 2) {
-      Xtrain <- scale(Xtrain, center = T, scale = F)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = FALSE)
     }
     if (method == 3) {
-      Xtrain <- scale(Xtrain, center = T, scale = T)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = TRUE)
     }
     if (method == 4) {
       ran <- apply(Xtrain, 2, function(x) max(x) - min(x))
-      Xtrain <- scale(Xtrain, center = T, scale = ran)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = ran)
     }
     if (method == 5) {
       ssd <- sqrt(apply(Xtrain, 2, sd))
-      Xtrain <- scale(Xtrain, center = T, scale = ssd)
+      Xtrain <- scale(Xtrain, center = TRUE, scale = ssd)
     }
     return(list(newXtrain = Xtrain))
   }
