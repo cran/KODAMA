@@ -14,7 +14,8 @@ continuous.test (name,
                  scientific = FALSE, 
                  range = c("IQR","95\%CI"), 
                  logchange = TRUE,
-                 pos=1, ...) 
+                 pos=1, 
+                 method=c("non-parametric","parametric"), ...) 
 }
 
 \arguments{
@@ -26,11 +27,12 @@ continuous.test (name,
   \item{range}{the range to be visualized.}
   \item{logchange}{either a logical specifying whether log2 of fold change  should be visualized.}
   \item{pos}{a value indicating the position of range to be visualized. 1 for column, 2 for row.}
+  \item{method}{a character string indicating which test method is to be computed. "non-parametric" (default), or "parametric".}
   \item{...}{further arguments to be passed to or from methods.}
 }
 
 \value{
-    The function returns a list containg a table with the summarized information and the relative p-value. If the number of group is equal to two, the p-value is computed using the Wilcoxon rank-sum test, Kruskal-Wallis test otherwise.
+    The function returns a list containg a table with the summarized information and the relative p-value. For non-parametric method, if the number of group is equal to two, the p-value is computed using the Wilcoxon rank-sum test, Kruskal-Wallis test otherwise. For parametric method, if the number of group is equal to two, the p-value is computed using the Student's t-Test, ANOVA one-way otherwise.
   }
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
@@ -47,11 +49,18 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 
 \examples{
 data(clinical)
-A=categorical.test("Gender",clinical[,"Gender"],clinical[,"Hospital"])
-B=categorical.test("Gleason score",clinical[,"Gleason score"],clinical[,"Hospital"])
 
-C=continuous.test("BMI",clinical[,"BMI"],clinical[,"Hospital"],digits=2,pos=2)
-D=continuous.test("Age",clinical[,"Age"],clinical[,"Hospital"],digits=1,pos=2)
+hosp=clinical[,"Hospital"]
+gender=clinical[,"Gender"]
+GS=clinical[,"Gleason score"]
+BMI=clinical[,"BMI"]
+age=clinical[,"Age"]
+
+A=categorical.test("Gender",gender,hosp)$text
+B=categorical.test("Gleason score",GS,hosp)$text
+
+C=continuous.test("BMI",BMI,hosp,digits=2,pos=2,logchange = FALSE)$text
+D=continuous.test("Age",age,hosp,digits=1,pos=2,logchange = FALSE)$text
 
 rbind(A,B,C,D)
 

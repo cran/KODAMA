@@ -34,15 +34,24 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
   \seealso{\code{\link{correlation.test}},\code{\link{continuous.test}}, \code{\link{txtsummary}}}
 
 \examples{
+
 data(clinical)
 
-A=categorical.test("Gender",clinical[,"Gender"],clinical[,"Hospital"])
-B=categorical.test("Gleason score",clinical[,"Gleason score"],clinical[,"Hospital"])
+hosp=clinical[,"Hospital"]
+gender=clinical[,"Gender"]
+GS=clinical[,"Gleason score"]
+BMI=clinical[,"BMI"]
+age=clinical[,"Age"]
 
-C=continuous.test("BMI",clinical[,"BMI"],clinical[,"Hospital"],digits=2,pos=2)
-D=continuous.test("Age",clinical[,"Age"],clinical[,"Hospital"],digits=1,pos=2)
+A=categorical.test("Gender",gender,hosp)$text
+B=categorical.test("Gleason score",GS,hosp)$text
+
+C=continuous.test("BMI",BMI,hosp,digits=2,pos=2,logchange = FALSE)$text
+D=continuous.test("Age",age,hosp,digits=1,pos=2,logchange = FALSE)$text
 
 rbind(A,B,C,D)
+rbind(A,B,C,D)
+
 
 }
 \keyword{categorical.test}

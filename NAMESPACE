@@ -15,7 +15,7 @@ useDynLib(KODAMA)
 importFrom(Rcpp, evalCpp)
 importFrom("graphics", "plot", "points")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
-importFrom("stats", "p.adjust", "fisher.test", "prcomp","aggregate","quantile", "wilcox.test","cmdscale", "as.dist", "dist", "kmeans", "kruskal.test","median", "pnorm", "rnorm", "runif", "sd", "var","cor.test")
+importFrom("stats", "aov", "summary.aov", "t.test", "p.adjust", "fisher.test", "prcomp","aggregate","quantile", "wilcox.test","cmdscale", "as.dist", "dist", "kmeans", "kruskal.test","median", "pnorm", "rnorm", "runif", "sd", "var","cor.test")
 importFrom("minerva", "mine")
 
 exportPattern(floyd,another,samm,knnsampling,

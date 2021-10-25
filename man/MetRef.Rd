@@ -42,7 +42,7 @@ u=u[,-which(colSums(u)==0)]
 u=normalization(u)$newXtrain
 u=scaling(u)$newXtrain
 class=as.numeric(as.factor(MetRef$gender))
-cc= prcomp(u)$x
+cc= pca(u)$x
 plot(cc,pch=21,bg=class,xlab="First Component",ylab="Second Component")
 
 class=as.numeric(as.factor(MetRef$donor))

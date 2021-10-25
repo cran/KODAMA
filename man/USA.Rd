@@ -38,7 +38,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 data(USA)
 kk=KODAMA(USA$data,FUN="KNN")
 oldpar <- par(cex=0.5,mar=c(15,6,2,2));
-plot(USA$year,kk$pp[,1],axes=F,pch=20,xlab="",ylab="First Component");
+plot(USA$year,kk$pp[,1],axes=FALSE,pch=20,xlab="",ylab="First Component");
 axis(1,at=USA$year,labels=rownames(USA$data),las=2);
 axis(2,las=2);
 box()

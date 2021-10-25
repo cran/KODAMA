@@ -65,8 +65,18 @@ continuous.test = function (name,
                             digits = 3,
                             scientific = FALSE, 
                             range = c("IQR","95%CI"), 
-                            logchange = TRUE,pos=1,...) 
+                            logchange = TRUE,pos=1,method=c("non-parametric","parametric"), ...) 
 {
+  
+  
+  matchFUN = pmatch(method[1], c("non-parametric","parametric"))
+    
+  if (matchFUN != 1 & matchFUN != 2) {
+    stop("Method argument should one of \"non-parametric\",\"parametric\"")
+  }
+      
+      
+  
   y = as.factor(y)
   ll = levels(y)
   A = x[y == ll[1]]
@@ -75,11 +85,21 @@ continuous.test = function (name,
   v = data.frame()
   v[1, 1] = name
   if (nn == 2) {
-    pval = wilcox.test(x ~ y)$p.value
+    if(matchFUN==1){    
+      pval = wilcox.test(x ~ y)$p.value
+    }    
+    if(matchFUN==2){    
+      pval = t.test(x~y)$p.value
+    }
     fc = -log2(mean(A, na.rm = TRUE)/mean(B, na.rm = TRUE))
   }
   if (nn > 2) {
-    pval = kruskal.test(x ~ y)$p.value
+    if(matchFUN==1){
+      pval = kruskal.test(x ~ y)$p.value
+    }
+    if(matchFUN==2){
+      pval = summary.aov(aov(x~y))[[1]]$`Pr(>F)`[1]
+    }
     logchange=FALSE
   }
   if (nn > 1) {
