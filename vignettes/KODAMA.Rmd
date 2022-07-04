@@ -20,7 +20,7 @@ vignette: >
 ## 1  Introduction
 
 KODAMA (Knowledge Discovery by Accuracy Maximization) is a novel learning algorithm for unsupervised feature extraction, specifically designed for analysing noisy and high-dimensional data sets (Cacciatore \emph{et al.}, 2014).The core idea of the original algorithm is to use an iteration procedure to produce a hypothetical classification through maximization of cross-validated predictive accuracy. Using only the data set as input (no \emph{a priori} knowledge is needed), an iterative procedure permits classification with a high cross-validated accuracy.
-Two different classifiers are implemented in this package for the computation of cross-validated predictive accuracy: \emph{k}-nearest neighbors (\emph{k}NN) and Partial Least Squares - Discriminant Analysis (PLS-DA). This procedure is repeated several times to average the effects owing to the randomness of the iterative procedure. After each run of the procedure, a classification vector with high cross-validated accuracy is obtained. KODAMA subsequently collects and processes these results by constructing a dissimilarity matrix to provide a holist view of the data.
+Two different classifiers are implemented in this package for the computation of cross-validated predictive accuracy: \emph{k}-nearest neighbors (\emph{k}NN) and Partial Least Squares - Discriminant Analysis (PLS-DA). This procedure is repeated several times to average the effects owing to the randomness of the iterative procedure. After each run of the procedure, a classification vector with high cross-validated accuracy is obtained. KODAMA subsequently collects and processes these results by constructing a dissimilarity matrix to provide a holistic view of the data.
 This documentation introduces the usage of KODAMA. 
 
 
@@ -153,13 +153,13 @@ This famous Fisher's (aka Anderson's) iris data set gives the measurements (cent
 
 ## 5  Starting with KODAMA
 
-We suggest KODAMA is first tested with the Iris dataset using the default parameters (\emph{i.e.}, \emph{k}NN classifier with \emph{k}=5). The KODAMA function automatically performs the Sammon's Non-Linear Mapping on the KODAMA dissimilarity matrix. The results can be visualized with the `plot` function.
+We suggest KODAMA is first tested with the Iris dataset using the default parameters (\emph{i.e.}, \emph{k}NN classifier with \emph{k}=2). The KODAMA function automatically performs the fast T-distributed Stochastic Neighbor Embedding (van der Maaten 2014) on the KODAMA dissimilarity matrix. The results can be visualized with the `plot` function.
 
     data(iris)
     data=iris[,-5]
     labels=iris[,5]
-    kodama_knn_5=KODAMA(data)
-    plot(kodama_knn_5$pp,col=as.numeric(labels), xlab="First component", ylab="Second component")
+    kodama_knn_5=KODAMA(data,FUN="KNN",f.par = 2)
+    plot(kodama_knn_2$scores,pch=21,bg=as.numeric(labels)+1, xlab="First component", ylab="Second component")
 
 \begin{figure}[h]
   \centerline{\includegraphics[width=8cm]{iris_knn_5.pdf}}
@@ -175,7 +175,7 @@ We suggest KODAMA is first tested with the Iris dataset using the default parame
 The `mcplot` function can be used to extract the values of cross-validated accuracy obtained from each iterative step of the Monte Carlo procedures of maximization of the cross-validated accuracy.
 
 
-    mcplot(kodam_knn_5)
+    mcplot(kodama_knn_5)
 
 
 
@@ -207,17 +207,17 @@ After the KODAMA analyses, the different solutions can be visualized for compara
 
     
     par(mfrow=c(2,3))
-    plot(kodama_knn_2$pp ,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_knn_2$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with kNN (k=2)")
-    plot(kodama_knn_5$pp ,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_knn_5$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with kNN (k=5)")
-    plot(kodama_knn_10$pp,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_knn_10$scores,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with kNN (k=10)")
-    plot(kodama_pls_2$pp ,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_pls_2$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with PLS (ncomp=2)")
-    plot(kodama_pls_3$pp ,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_pls_3$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with PLS (ncomp=3)")
-    plot(kodama_pls_4$pp ,col=as.numeric(labels),xlab="First component", 
+    plot(kodama_pls_4$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
                          ylab="Second component",main="KODAMA with PLS (ncomp=4)")
 
 
@@ -281,18 +281,18 @@ Firstly the MetRef dataset is pre-processed. This involves removing zero values 
 KODAMA is performed using different input settings.    
     
     
-    kk1=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 2)
-    kk2=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 5)
-    kk3=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 10)
-    kk4=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 20)
-    kk5=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 50)
-    kk6=KODAMA2(MetRef$data,FUN = "PLS-DA",f.par = 100)
-    kk7=KODAMA2(MetRef$data,FUN = "KNN",f.par = 2)
-    kk8=KODAMA2(MetRef$data,FUN = "KNN",f.par = 3)
-    kk9=KODAMA2(MetRef$data,FUN = "KNN",f.par = 5)
-    kk10=KODAMA2(MetRef$data,FUN = "KNN",f.par = 10)
-    kk11=KODAMA2(MetRef$data,FUN = "KNN",f.par = 15)
-    kk12=KODAMA2(MetRef$data,FUN = "KNN",f.par = 20)
+    kk1=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 2)
+    kk2=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 5)
+    kk3=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 10)
+    kk4=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 20)
+    kk5=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 50)
+    kk6=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 100)
+    kk7=KODAMA(MetRef$data,FUN = "KNN",f.par = 2)
+    kk8=KODAMA(MetRef$data,FUN = "KNN",f.par = 3)
+    kk9=KODAMA(MetRef$data,FUN = "KNN",f.par = 5)
+    kk10=KODAMA(MetRef$data,FUN = "KNN",f.par = 10)
+    kk11=KODAMA(MetRef$data,FUN = "KNN",f.par = 15)
+    kk12=KODAMA(MetRef$data,FUN = "KNN",f.par = 20)
 
 
 
@@ -305,7 +305,7 @@ The most informative solution is represented by KODAMA using the PLS-DA with 100
 knitr::kable(matrix(ncol=3,c("kNN","kNN","kNN","kNN","kNN","kNN",
                              "PLS-DA","PLS-DA","PLS-DA","PLS-DA","PLS-DA","PLS-DA",
                              2,3,5,10,15,20,2,5,10,20,50,100,
-                             13.460,13.428,13.425,13.420,13.426,13.451,13.493,13.509,13.497,13.445,13.245,13.093),
+                             12.847,12.228,12.129,12.432,12.783,13.137,13.370,13.416,13.322,12.637,11.327,11.307),
                     
                     dimnames = list(NULL,c("Classifier","parameter","Entropy"))))
 ```
@@ -320,12 +320,10 @@ Principal Component Analysis, performed on this data set, is shown in the figure
 
 
     par(mfrow=c(1,2))
-    plot(prcomp(scale(MetRef$data))$x,
-         bg=rainbow(22)[donor],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(prcomp(scale(MetRef$data))$x,
-         bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
+    plot(pca(MetRef$data)$x,
+         bg=rainbow(22)[donor],pch=21,cex=1.5)
+    plot(pca(MetRef$data)$x,
+         bg=c("#2c7ac8","#e3b80f")[gender],pch=21,cex=1.5)
 
 
 
@@ -344,11 +342,11 @@ The result of KODAMA with PLS-DA using 100 components as the classifier is subse
 
  
 
-    kk1=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100)
+
     par(mfrow=c(1,2))
-    plot(kk1$pp,bg=rainbow(22)[donor],pch=21,
+    plot(kk6$scores,bg=rainbow(22)[donor],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kk1$pp,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
+    plot(kk6$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
 
 
@@ -371,11 +369,11 @@ KODAMA can also use external information to work in a semi-supervised way. Super
 In the next example, urine samples from the same donor are linked by providing class (donor) information to the algorithm before performing the iterative procedure thereby undertaking a “semi-supervised approach” to highlight otherwise hidden features. 
 
 
-    kk2=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,constrain=donor )
+    kkA=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,constrain=donor )
     par(mfrow=c(1,2))
-    plot(kk2$pp,bg=rainbow(22)[donor],pch=21,
+    plot(kkA$scores,bg=rainbow(22)[donor],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kk2$pp,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
+    plot(kkA$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
 
 
@@ -400,11 +398,11 @@ Here, gender information for the first ten donors is provided. Color coding indi
     FIX=sample(c(TRUE,FALSE),873,T)
     inform=gender
     inform[!FIX]=NA
-    kk4=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W=inform,fix=FIX)
+    kkB=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W=inform,fix=FIX)
     par(mfrow=c(1,2))
-    plot(kk4$pp,bg=rainbow(22)[donor],pch=21,
+    plot(kkB$scores,bg=rainbow(22)[donor],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kk4$pp,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
+    plot(kkB$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
 
 
@@ -424,11 +422,11 @@ Here, information of the last two examples are provided together.
     FIX=donor>10
     inform=gender
     inform[!FIX]=NA
-    kk5=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W= inform,constrain=donor,fix=FIX)
+    kkC=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W= inform,constrain=donor,fix=FIX)
     par(mfrow=c(1,2))
-    plot(kk5$pp,bg=rainbow(22)[donor],pch=21,
+    plot(kkC$scores,bg=rainbow(22)[donor],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kk5$pp,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
+    plot(kkC$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
          xlab="First Component", ylab="Second Component",cex=1.5)
 
  
@@ -454,6 +452,8 @@ Here, information of the last two examples are provided together.
 
 
 ## 6  Special Notes for Users Upgrading from Previous Version
+
+Version 2.0 has introduced a few novelty to the KODAMA algorithm and some small changes in the output structure of the functions. We tried to ensure backward compatibility with the previous version where possible. Sammon's Non-Linear Mapping (Sammon 1969) used in the previous version to transform the KODAMA dissimilarity matrix in a space dimensionality has been replaced by t-SNE (van der Maaten 2008) with Tree-Based implementation (van der Maaten 2014) using the Rtsne package.
 
 Version 1.1 has brought several fundamental changes to the architecture of the package. We tried to ensure backward compatibility with the previous version where possible. However, there are still some caveats the users should take into account. 
 
@@ -514,5 +514,9 @@ Fisher RA (1936) The use of multiple measurements in taxonomic problems. \emph{A
 Sammon, J. W. (1969) A non-linear mapping for data structure analysis. \emph{IEEE Trans Comput}, C-18 401–409.
 
 Shannon CE (1948) A mathematical theory of communication. \emph{Bell Syst Tech J}, 27(3), 379-423.
+
+van der Maaten, L.J.P. & Hinton, G.E. (2008) Visualizing High-Dimensional Data Using t-SNE. \emph{Journal of Machine Learning Research}, 9, 2579-2605.
+
+van der Maaten, L.J.P. (2014) Accelerating t-SNE using Tree-Based Algorithms. \emph{Journal of Machine Learning Research}, 15, 3221-3245.
 
 

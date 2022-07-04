@@ -43,7 +43,7 @@ u=normalization(u)$newXtrain
 u=scaling(u)$newXtrain
 class=as.numeric(as.factor(MetRef$gender))
 cc=pca(u)
-plot(cc$x,pch=21,bg=class,xlab=cc$txt[1],ylab=cc$txt[2])
+plot(cc$x,pch=21,bg=class)
 }
 
 \keyword{pca}

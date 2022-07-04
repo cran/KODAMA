@@ -47,19 +47,6 @@ RcppExport SEXP KODAMA_knn_kodama_r(SEXP XtrainSEXP, SEXP YtrainSEXP, SEXP Xtest
   return __result;
   END_RCPP
 }
-// samm_cpp
-arma::mat samm_cpp(arma::mat x, arma::mat y, int k);
-RcppExport SEXP KODAMA_samm_cpp(SEXP xSEXP, SEXP ySEXP, SEXP kSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
-    Rcpp::traits::input_parameter< int >::type k(kSEXP);
-    __result = Rcpp::wrap(samm_cpp(x, y, k));
-    return __result;
-END_RCPP
-}
 // KNNCV
 arma::ivec KNNCV(arma::mat x, arma::ivec cl, arma::ivec constrain, int k);
 RcppExport SEXP KODAMA_KNNCV(SEXP xSEXP, SEXP clSEXP, SEXP constrainSEXP, SEXP kSEXP) {
@@ -237,22 +224,6 @@ BEGIN_RCPP
     __result = Rcpp::wrap(corecpp(x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake, proj));
     return __result;
 END_RCPP
-}
-// another
-List another(arma::mat pptrain, arma::mat xtrain, arma::mat xtest, arma::mat res, arma::mat Xlink, double epsilon);
-RcppExport SEXP KODAMA_another(SEXP pptrainSEXP, SEXP xtrainSEXP, SEXP xtestSEXP, SEXP resSEXP, SEXP XlinkSEXP, SEXP epsilonSEXP) {
-  BEGIN_RCPP
-  Rcpp::RObject __result;
-  Rcpp::RNGScope __rngScope;
-  Rcpp::traits::input_parameter< arma::mat >::type pptrain(pptrainSEXP);
-  Rcpp::traits::input_parameter< arma::mat >::type xtrain(xtrainSEXP);
-  Rcpp::traits::input_parameter< arma::mat >::type xtest(xtestSEXP);
-  Rcpp::traits::input_parameter< arma::mat >::type res(resSEXP);
-  Rcpp::traits::input_parameter< arma::mat >::type Xlink(XlinkSEXP);
-  Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
-  __result = Rcpp::wrap(another(pptrain, xtrain, xtest, res, Xlink, epsilon));
-  return __result;
-  END_RCPP
 }
 // knn_Armadillo
 List knn_Armadillo(arma::mat Xtrain,arma::mat Xtest,int k);

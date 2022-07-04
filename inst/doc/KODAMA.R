@@ -8,7 +8,7 @@ knitr::kable(matrix(ncol=3,c("kNN","kNN","kNN","PLS-DA","PLS-DA","PLS-DA",2,5,10
 knitr::kable(matrix(ncol=3,c("kNN","kNN","kNN","kNN","kNN","kNN",
                              "PLS-DA","PLS-DA","PLS-DA","PLS-DA","PLS-DA","PLS-DA",
                              2,3,5,10,15,20,2,5,10,20,50,100,
-                             13.460,13.428,13.425,13.420,13.426,13.451,13.493,13.509,13.497,13.445,13.245,13.093),
+                             12.847,12.228,12.129,12.432,12.783,13.137,13.370,13.416,13.322,12.637,11.327,11.307),
                     
                     dimnames = list(NULL,c("Classifier","parameter","Entropy"))))
 

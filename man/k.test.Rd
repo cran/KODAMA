@@ -35,7 +35,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  data=iris[,-5]
  labels=iris[,5]
  kk=KODAMA(data,FUN="PLS-DA")
- kkplot=kk$pp
+ kkplot=kk$scores
  k1=k.test(kkplot,labels)
  print(k1)
  k2=k.test(kkplot,sample(labels))

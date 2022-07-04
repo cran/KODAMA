@@ -3,10 +3,6 @@
 \alias{RQ}
 \alias{another}
 \alias{knn_Armadillo}
-\alias{knnsampling}
-\alias{samm}
-\alias{samm_cpp}
-\alias{vis.KODAMA}
 \title{Internal Grid Functions}
 \description{
  Internal Grid functions

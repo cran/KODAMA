@@ -13,6 +13,12 @@ knn.kodama <- function(Xtrain,
                        scaling=c("centering","autoscaling"),
                        perm.test=FALSE,
                        times=1000){
+  if(sum(is.na(Xtrain))>0) {
+    stop("Missing values are present in the traing set")
+  } 
+  if(sum(is.na(Xtest))>0) {
+    stop("Missing values are present in the test set")
+  } 
   scal=pmatch(scaling,c("centering","autoscaling"))[1]
   oo=list()
     Xtrain=as.matrix(Xtrain)
@@ -67,10 +73,6 @@ knn.kodama <- function(Xtrain,
       }
     }
     oo
-}
-
-samm_cpp <- function(x, y, k) {
-    .Call('KODAMA_samm_cpp', PACKAGE = 'KODAMA', x, y, k)
 }
 
 KNNCV <- function(x, cl, constrain, k) {
@@ -196,10 +198,6 @@ double_knn_cv <- function(x, yy, constrain, type, verbose, compmax,optim,scaling
 
 corecpp <- function(x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake, proj) {
     .Call('KODAMA_corecpp', PACKAGE = 'KODAMA', x, xTdata, clbest, Tcycle, FUN, fpar, constrain, fix, shake, proj)
-}
-
-another <- function(pptrain, xtrain, xtest, res, Xlink, epsilon) {
-  .Call('KODAMA_another', PACKAGE = 'KODAMA', pptrain, xtrain, xtest, res, Xlink, epsilon)
 }
 
 knn_Armadillo <- function(Xtrain, Xtest, k) {

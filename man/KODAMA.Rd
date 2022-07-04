@@ -21,7 +21,8 @@ KODAMA(data,
         fix=NULL, 
         epsilon = 0.05,
         dims=2,
-        landmarks=5000)
+        landmarks=1000,
+        perplexity=30, ...)
 }
 
 \arguments{
@@ -60,16 +61,22 @@ KODAMA(data,
   	cut-off value for low proximity. High proximity are typical of intracluster relationships, whereas low proximities are expected for intercluster relationships. Very low proximities between samples are ignored by (default) setting \code{epsilon = 0.05}.
 }
     \item{dims}{
-  dimensions of the configurations of Sammon's non-linear mapping based on the KODAMA dissimilarity matrix.
+  dimensions of the configurations of t-SNE based on the KODAMA dissimilarity matrix.
   }
       \item{landmarks}{
   number of landmarks to use.
+  }
+      \item{perplexity}{
+  perplexity parameter.
+  }
+      \item{...}{
+  other parameters of t-SNE.
   }
 
 }
 
 \details{
-KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, Sammon's non-linear mapping is used to visualise the results of KODAMA dissimilarity matrix. 
+KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, t-SNE is used to visualise the results of KODAMA dissimilarity matrix. 
 
 }
 
@@ -79,7 +86,7 @@ KODAMA consists of five steps. These can be in turn divided into two parts: (i) 
     \item{acc}{a vector with the \code{M} cross-validated accuracies.}
     \item{proximity}{a proximity matrix.}
     \item{v}{a matrix containing the all classification obtained maximizing the cross-validation accuracy.}
-    \item{pp}{a matrix containing the score of the Sammon's non-linear mapping.}
+    \item{scores}{a matrix containing the score of the t-SNE analysis performed on the KODAMA output.}
     \item{res}{a matrix containing all classification vectors obtained through maximizing the cross-validation accuracy.}
     \item{f.par}{parameters of the classifier..}
     \item{entropy}{Shannon's entropy of the KODAMA proximity matrix.}
@@ -108,7 +115,7 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  data=iris[,-5]
  labels=iris[,5]
  kk=KODAMA(data,FUN="KNN")
- plot(kk$pp,col=as.numeric(labels), xlab="First component", ylab="Second component",cex=2)
+ plot(kk$scores,col=as.numeric(labels),cex=2)
 
 }
 }

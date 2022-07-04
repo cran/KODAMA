@@ -13,9 +13,10 @@ continuous.test (name,
                  digits = 3,
                  scientific = FALSE, 
                  range = c("IQR","95\%CI"), 
-                 logchange = TRUE,
-                 pos=1, 
-                 method=c("non-parametric","parametric"), ...) 
+                 logchange = FALSE,
+                 pos=2, 
+                 method=c("non-parametric","parametric"),
+                 total.column=FALSE, ...) 
 }
 
 \arguments{
@@ -28,11 +29,12 @@ continuous.test (name,
   \item{logchange}{either a logical specifying whether log2 of fold change  should be visualized.}
   \item{pos}{a value indicating the position of range to be visualized. 1 for column, 2 for row.}
   \item{method}{a character string indicating which test method is to be computed. "non-parametric" (default), or "parametric".}
+  \item{total.column}{option to visualize the total (by default = "\code{FALSE}")}
   \item{...}{further arguments to be passed to or from methods.}
 }
 
 \value{
-    The function returns a list containg a table with the summarized information and the relative p-value. For non-parametric method, if the number of group is equal to two, the p-value is computed using the Wilcoxon rank-sum test, Kruskal-Wallis test otherwise. For parametric method, if the number of group is equal to two, the p-value is computed using the Student's t-Test, ANOVA one-way otherwise.
+    The function returns a table with the summarized information and the relative p-value. For non-parametric method, if the number of group is equal to two, the p-value is computed using the Wilcoxon rank-sum test, Kruskal-Wallis test otherwise. For parametric method, if the number of group is equal to two, the p-value is computed using the Student's t-Test, ANOVA one-way otherwise.
   }
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
@@ -56,11 +58,11 @@ GS=clinical[,"Gleason score"]
 BMI=clinical[,"BMI"]
 age=clinical[,"Age"]
 
-A=categorical.test("Gender",gender,hosp)$text
-B=categorical.test("Gleason score",GS,hosp)$text
+A=categorical.test("Gender",gender,hosp)
+B=categorical.test("Gleason score",GS,hosp)
 
-C=continuous.test("BMI",BMI,hosp,digits=2,pos=2,logchange = FALSE)$text
-D=continuous.test("Age",age,hosp,digits=1,pos=2,logchange = FALSE)$text
+C=continuous.test("BMI",BMI,hosp,digits=2)
+D=continuous.test("Age",age,hosp,digits=1)
 
 rbind(A,B,C,D)
 

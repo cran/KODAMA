@@ -46,10 +46,10 @@ Comparison of discrimination methods for the classification of tumors using gene
 data(lymphoma)
 class=1+as.numeric(lymphoma$class)
 cc=pca(lymphoma$data)$x
-plot(cc,pch=21,bg=class,xlab="First Component",ylab="Second Component")
+plot(cc,pch=21,bg=class)
 
-kk=KODAMA(lymphoma$data)
-plot(kk$pp,pch=21,bg=class,xlab="First Component",ylab="Second Component")
+kk=KODAMA(lymphoma$data,perplexity = 10)
+plot(kk$scores,pch=21,bg=class)
 
 }
 }

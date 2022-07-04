@@ -43,13 +43,17 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \examples{
 data(clinical)
 
+hosp=clinical[,"Hospital"]
+gender=clinical[,"Gender"]
+GS=clinical[,"Gleason score"]
+BMI=clinical[,"BMI"]
+age=clinical[,"Age"]
 
-A=categorical.test("Gender",clinical[,"Gender"],clinical[,"Hospital"])
-B=categorical.test("Gleason score",clinical[,"Gleason score"],clinical[,"Hospital"])
+A=categorical.test("Gender",gender,hosp)
+B=categorical.test("Gleason score",GS,hosp)
 
-C=continuous.test("BMI",clinical[,"BMI"],clinical[,"Hospital"],digits=2,pos=2)
-D=continuous.test("Age",clinical[,"Age"],clinical[,"Hospital"],digits=1,pos=2)
-
+C=continuous.test("BMI",BMI,hosp,digits=2)
+D=continuous.test("Age",age,hosp,digits=1)
 
 # Analysis without matching
 rbind(A,B,C,D)
@@ -63,11 +67,17 @@ t=frequency_matching(clinical[,var],clinical[,"Hospital"],times=1)
 
 newdata=clinical[t$selection,]
 
-A=categorical.test("Gender",newdata[,"Gender"],newdata[,"Hospital"])
-B=categorical.test("Gleason score",newdata[,"Gleason score"],newdata[,"Hospital"])
+hosp.new=newdata[,"Hospital"]
+gender.new=newdata[,"Gender"]
+GS.new=newdata[,"Gleason score"]
+BMI.new=newdata[,"BMI"]
+age.new=newdata[,"Age"]
 
-C=continuous.test("BMI",newdata[,"BMI"],newdata[,"Hospital"],digits=2,pos=2)
-D=continuous.test("Age",newdata[,"Age"],newdata[,"Hospital"],digits=1,pos=2)
+A=categorical.test("Gender",gender.new,hosp.new)
+B=categorical.test("Gleason score",GS.new,hosp.new)
+
+C=continuous.test("BMI",BMI.new,hosp.new,digits=2)
+D=continuous.test("Age",age.new,hosp.new,digits=1)
 
 # Analysis with matching
 rbind(A,B,C,D)

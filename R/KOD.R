@@ -65,7 +65,7 @@ continuous.test = function (name,
                             digits = 3,
                             scientific = FALSE, 
                             range = c("IQR","95%CI"), 
-                            logchange = TRUE,pos=1,method=c("non-parametric","parametric"), ...) 
+                            logchange = FALSE,pos=2,method=c("non-parametric","parametric"),total.column=FALSE, ...) 
 {
   
   
@@ -82,23 +82,23 @@ continuous.test = function (name,
   A = x[y == ll[1]]
   B = x[y == ll[2]]
   nn = length(levels(y))
-  v = data.frame()
+  v = data.frame(matrix(nrow=1,ncol=nn+3))
   v[1, 1] = name
   if (nn == 2) {
     if(matchFUN==1){    
-      pval = wilcox.test(x ~ y)$p.value
+      pval = wilcox.test(x ~ y,...)$p.value
     }    
     if(matchFUN==2){    
-      pval = t.test(x~y)$p.value
+      pval = t.test(x~y,...)$p.value
     }
     fc = -log2(mean(A, na.rm = TRUE)/mean(B, na.rm = TRUE))
   }
   if (nn > 2) {
     if(matchFUN==1){
-      pval = kruskal.test(x ~ y)$p.value
+      pval = kruskal.test(x ~ y,...)$p.value
     }
     if(matchFUN==2){
-      pval = summary.aov(aov(x~y))[[1]]$`Pr(>F)`[1]
+      pval = summary.aov(aov(x~y,...))[[1]]$`Pr(>F)`[1]
     }
     logchange=FALSE
   }
@@ -114,6 +114,8 @@ continuous.test = function (name,
   
   
   matchFUN = pmatch(range[1], c("IQR", "95%CI"))
+  
+  
   if(pos==1){
     
     if (matchFUN == 1) {
@@ -132,22 +134,25 @@ continuous.test = function (name,
     if (matchFUN == 2) {
       v[1, 1] = paste(name, ", median [95%CI]",sep = "")
     }
+    
     names(v) = c("Feature", levels(y), "Total", "p-value")
   }
   v[v == "NA [NA NA]"] = "-"
   if (logchange == TRUE) {
-    v = cbind(v[1, 1:(nn + 2)], logchange = round(fc, digits = 2),v[1, (nn + 3)])
-    names(v)[nn + 4]="p-value"
-    list(text = v, p.value = pval, logchange = fc)
+    v = cbind(v[1, 1:(nn + 2)], logchange = round(fc, digits = 2),"p-value"=v[1, (nn + 3)])
+
+    attr(v,"p-logchange")=fc
   }
-  else {
-    list(text = v, p.value = pval)
+  if(!total.column){
+    v=v[,-(nn+2)]
   }
+  attr(v,"p-value")=pval
+  return(v)
 }
 
 #-----for categorical data 
 categorical.test = 
-  function (name, x, y) 
+  function (name, x, y,total.column=FALSE) 
   {
     y = as.factor(y)
     nn = length(levels(y))
@@ -171,10 +176,17 @@ categorical.test =
                   sep = "")
     cc = cbind(group, tc, rep(NA, length(group)))
     cc = rbind(v, cc)
-    colnames(cc) = c("Feature", colnames(t0), "Total", 
+    #tet=table(y)
+    #te=paste(c(colnames(t0),"Total")," (n=",c(tet,sum(tet)),")",sep="")
+    te=c(colnames(t0),"Total")
+    colnames(cc) = c("Feature", te, 
                      "p-value")
     cc[is.na(cc)] = ""
-    list(text = cc, p.value = p.value)
+    if(!total.column){
+      cc=cc[,-(nn+2)]
+    }
+    attr(cc,"p-value")=p.value
+    return(cc)
   }
 
 
@@ -190,49 +202,50 @@ correlation.test= function(x,y,method = c("pearson", "spearman","MINE"), name=NA
   x=x[sel]
   y=y[sel]
   
-  res$text = data.frame()
-  res$text[1, 1] = name
-  res$text[1,2]=NA
-  res$text[1,3]=NA
+  text = data.frame(matrix(nrow=1,ncol=3))
+  text[1, 1] = name
+  text[1,2]=NA
+  text[1,3]=NA
   if(length(x)<5){
     warning("The number of correlated elements is less than 5.")
-    res$estimate=NA
-    res$p.value=NA
+    estimate=NA
+    p.value=NA
     
   }else{
     if(matchFUN==1){
       temp=cor.test(x,y,method="pearson")
-      res$estimate=temp$estimate
-      res$p.value=temp$p.value
+      estimate=temp$estimate
+      p.value=temp$p.value
     }
     if(matchFUN==2){
       temp=cor.test(x,y,method="spearman")
-      res$estimate=temp$estimate
-      res$p.value=temp$p.value
+      estimate=temp$estimate
+      p.value=temp$p.value
     }
     if(matchFUN==3){
-      res$estimate=mine(x,y)$MIC
+      estimate=mine(x,y)$MIC
       v=NULL
       for(i in 1:perm){
         v[i]=mine(x,sample(y))$MIC
       }
-      res$p.value=pnorm(res$estimate, mean = mean(v), sd = sqrt(((length(v) - 
+      p.value=pnorm(estimate, mean = mean(v), sd = sqrt(((length(v) - 
                                                                     1)/length(v)) * var(v)), lower.tail = FALSE)
     }
-    res$text[1,2]=round(res$estimate,digits=2)
-    res$text[1,3]=format(res$p.value, digits = 3, scientific = TRUE)
+    text[1,2]=round(estimate,digits=2)
+    text[1,3]=format(p.value, digits = 3, scientific = TRUE)
   }
   if(matchFUN==1){
-    names(res$text)=c("Feature","r","p-value")
+    names(text)=c("Feature","r","p-value")
   }  
   if(matchFUN==2){
-    names(res$text)=c("Feature","rho","p-value")
+    names(text)=c("Feature","rho","p-value")
   }  
   if(matchFUN==3){
-    names(res$text)=c("Feature","MIC","p-value")
+    names(text)=c("Feature","MIC","p-value")
   }
-  
-  return(res)
+  attr(text,"estimate")=estimate
+  attr(text,"p-value")=p.value
+  return(text)
 }
 
 
@@ -241,55 +254,12 @@ pca = function(x,...){
   res=prcomp(x,...)
   ss=sprintf("%.1f",summary(res)$importance[2,]*100)
   res$txt = paste(names(summary(res)$importance[2,])," (",ss,"%)",sep="")
+  colnames(res$x)=res$txt
   res
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-samm = function (d, k = 2) {
-  
-
-  x <- as.matrix(d)
-  y = cmdscale(d, k)
-  z=samm_cpp(x,y,k)
-  list(points = z)
-}
-
-
-knnsampling = function(data,n,k=10,cycle=1){
-  
-  ss=sample(nrow(data),n)
-  for(ii in 1:cycle){
-    s=ss
-    
-    data_sampled=data[s,]
-    g=knn_Armadillo(data,data_sampled,10)
-    gi=g$nn_index
-    best=Inf
-    ss=s
-    for(j in 1:n){
-      gij=gi[j,]
-      gg=knn_Armadillo(data_sampled, data[gij,],k = k)
-      tot=rowSums(gg$distances)
-      sel=gij[which.max(tot)]
-      ss[j]=sel
-    }
-  }
-  ss
-}
 
 
 
@@ -299,30 +269,57 @@ KODAMA=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
   ceiling(nrow(x) * 0.75)
 }, bagging = FALSE, FUN = c("PLS-DA","KNN"), f.par = 5, 
 W = NULL, constrain = NULL, fix=NULL, 
-epsilon = 0.05,dims=2,landmarks=5000) 
+epsilon = 0.05,dims=2,landmarks=1000, perplexity=30, ...) 
 {
-
+  
+  if(sum(is.na(data))>0) {
+    stop("Missing values are present")
+  } 
+  
   if(is.null(fix)) fix = rep(FALSE, nrow(data))
   if(is.null(constrain)) constrain = 1:nrow(data)
-
   
   data = as.matrix(data)
   shake = FALSE
   nsample=nrow(data) 
   landpoints=NULL
   
-
- 
-  LMARK=(nsample>landmarks)
+  nlandmarks=landmarks
+  if(length(landmarks)>1) {
+    if(max(landmarks)>nsample){
+      stop("A selected landmark exceed the number of entries")
+    }
+    if(length(table(table(landmarks)))>1) {
+      stop("Repeated landmarks are not allowed")
+    }
+    if(length(landmarks)>nsample) {
+      stop("The number of landmarks exceed the number of entries")
+    } 
+    nlandmarks=length(landmarks)
+  } 
+  LMARK=(nsample>nlandmarks)
   if(LMARK){
-    landpoints=sort(knnsampling(data,landmarks))
+    if(length(landmarks)>1){
+      landpoints=landmarks
+    }else{
+      #landpoints=sort(knnsampling(data,landmarks))
+      landpoints=sort(sample(nrow(data),landmarks))
+      
+      clust= as.numeric(kmeans(data,landmarks)$cluster)
+      landpoints=NULL
+      for(ii in 1:landmarks){
+        landpoints=c(landpoints,sample(which(clust==ii))[1])
+      }
+      
+    }
+    
     #landpoints=sort(sample(nrow(data),landmarks))
     Tdata=data[-landpoints,,drop=FALSE]
     Xdata=data[landpoints,,drop=FALSE]
     Xdata_landpoints=Xdata
     Tfix=fix[-landpoints]
     Xfix=fix[landpoints] 
-
+    
     Tconstrain=constrain[-landpoints]
     Xconstrain=constrain[landpoints] 
     vect_proj = matrix(NA,nrow = M, ncol = nrow(Tdata))
@@ -358,13 +355,13 @@ epsilon = 0.05,dims=2,landmarks=5000)
     
     
     if(LMARK){
-     ks=round(nsample/landmarks)
+      ks=round(nsample/nlandmarks)
       tt=knn_Armadillo(data,data[landpoints,],k=ks)$nn_index
       landpoints2=landpoints
       for(ii in 1:landmarks){
         landpoints2[ii]=tt[ii,sample(ks,1)]
       }
-    #landpoints=sort(sample(nrow(data),landmarks))
+      #landpoints=sort(sample(nrow(data),landmarks))
       Xdata=data[landpoints2,,drop=FALSE]
     }
     
@@ -376,7 +373,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     #
     sva = sample(nva, FUN_VAR, FALSE, NULL)
     ssa = c(whT, sample(whF, FUN_SAM, bagging, NULL))
-
+    
     #
     # Here the selection of variables and samples of landmark datapoints is performed
     #   
@@ -386,8 +383,8 @@ epsilon = 0.05,dims=2,landmarks=5000)
     Xconstrain_ssa=as.numeric(as.factor(Xconstrain[ssa]))
     Xconstrain_ssa_previous=Xconstrain[ssa]
     Xfix_ssa=Xfix[ssa]
-        
-
+    
+    
     ###################################
     del_n=rep(NA,nrow(x))
     for(ik in 1:(nrow(x)-1)){
@@ -424,16 +421,16 @@ epsilon = 0.05,dims=2,landmarks=5000)
       }
     }else{
       XW=W[landpoints][ssa]
-    
+      
       if (any(is.na(XW))) {
         if(xsa_same_point<=200 || length(unique(x))<50){
-
+          
           unw = unique(XW)
           unw = unw[-which(is.na(unw))]
           ghg = is.na(XW)
           nnew=length(unique(Xconstrain_ssa[ghg]))
           XW[ghg]=as.numeric(as.factor(Xconstrain_ssa[ghg]))+ length(unw)
-        
+          
         }else{
           clust= as.numeric(kmeans(x,50)$cluster)
           tab=apply(table(clust,Xconstrain_ssa),2,which.max)
@@ -454,13 +451,13 @@ epsilon = 0.05,dims=2,landmarks=5000)
       xTdata=NULL
     }
     
-
     
-      
-
-
     
-      
+    
+    
+    
+    
+    
     
     #############################################################################
     #                                                                           #
@@ -468,7 +465,7 @@ epsilon = 0.05,dims=2,landmarks=5000)
     #                                                                           #
     #############################################################################
     yatta = core_cpp(x,xTdata,clbest,Tcycle,FUN,f.par,Xconstrain_ssa,Xfix_ssa,shake)
-
+    
     #############################################################################
     #############################################################################
     
@@ -484,14 +481,14 @@ epsilon = 0.05,dims=2,landmarks=5000)
       if(LMARK){
         yatta$vect_proj=as.vector(yatta$vect_proj)
         yatta$vect_proj[Tfix]=W[-landpoints][Tfix]
-#        tab=as.numeric(apply(table(yatta$vect_proj,Tconstrain),2,which.max))
+        #        tab=as.numeric(apply(table(yatta$vect_proj,Tconstrain),2,which.max))
         
-#        tt=table(as.numeric(yatta$clbest),Xconstrain_ssa)
-#        tt_constr=rownames(tt)[apply(tt,2,which.max)]
-#        names(tt_constr)=colnames(tt)
+        #        tt=table(as.numeric(yatta$clbest),Xconstrain_ssa)
+        #        tt_constr=rownames(tt)[apply(tt,2,which.max)]
+        #        names(tt_constr)=colnames(tt)
         
         
-#        yatta$vect_proj=as.numeric(tt_constr[as.character(Tconstrain)])
+        #        yatta$vect_proj=as.numeric(tt_constr[as.character(Tconstrain)])
         
         vect_proj[k, ] = yatta$vect_proj
       }
@@ -501,8 +498,8 @@ epsilon = 0.05,dims=2,landmarks=5000)
       nun = length(uni)
       for (ii in 1:nun) ma[ssa[clbest == uni[ii]], 
                            ssa[clbest == uni[ii]]] = 
-                        ma[ssa[clbest == uni[ii]], 
-                           ssa[clbest == uni[ii]]] + 1
+        ma[ssa[clbest == uni[ii]], 
+           ssa[clbest == uni[ii]]] + 1
       normalization[ssa, ssa] = normalization[ssa, ssa] +  1
       res[k, ssa] = clbest
     }
@@ -510,63 +507,108 @@ epsilon = 0.05,dims=2,landmarks=5000)
   close(pb)
   ma = ma/normalization
   Edist = as.matrix(dist(Xdata_landpoints))
-  ma[ma < epsilon] = 0
+  #  ma[ma < epsilon] = 0
   mam = (1/ma) * Edist
   
-  mam[is.na(mam)] <- .Machine$double.xmax
-  mam[is.infinite(mam) & mam > 0] <- .Machine$double.xmax
-  mam = floyd(mam)
-  mam[mam == .Machine$double.xmax] <- NA
+  ###############################################################
+
+    mam[is.na(mam)] <- .Machine$double.xmax
+    mam[is.infinite(mam) & mam > 0] <- .Machine$double.xmax
+    mam = floyd(mam)
+    mam[mam == .Machine$double.xmax] <- NA
   
-  prox = Edist/mam
-  diag(prox) = 1
-  prox[is.na(prox)] = 0
-  maxvalue=max(mam, na.rm = TRUE)
-  mam[is.na(mam)] = maxvalue
-  mam = as.dist(mam)
+    prox = Edist/mam
+    diag(prox) = 1
+    prox[is.na(prox)] = 0
+    maxvalue=max(mam, na.rm = TRUE)
+    mam[is.na(mam)] = maxvalue
+  # mam = as.dist(mam)
+ 
+  ###############################################################
   
   #Calculation of the entropy of the proximity matrix
-  y=prox
+  y=ma # novelty  #prox
   diag(y)=NA
   yy=as.numeric(y)
   yy=yy[!is.na(yy)]
   yy=yy/sum(yy)
   H=-sum(ifelse(yy>0,yy*log(yy),0))
-  
+  ntsne=min(round(perplexity)*3,nrow(data)-1)
   if(LMARK){
-    pp=matrix(nrow=nsample,ncol=dims)
-    mimi=min(mam[mam!=0],na.rm = TRUE)
-
-    pp_landpoints=samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
-
-
-    pr=another(pp_landpoints,Xdata_landpoints,Tdata,res,vect_proj,epsilon) 
-    pp[landpoints,]=pp_landpoints
-    pp[-landpoints,]=pr$pp;
-  
+    
     total_res=matrix(nrow=M,ncol=nsample)
     total_res[,landpoints]=res
     total_res[,-landpoints]=vect_proj;
-  }else{
-    mimi=min(mam[mam!=0],na.rm = TRUE)
+    
+  
+    
+    tsneknn=knn_Armadillo(data,data,ntsne+1)
+    tsneknn$distances=tsneknn$distances[,-1]
+    tsneknn$nn_index=tsneknn$nn_index[,-1]
 
-    pp_landpoints=samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
-    pp=pp_landpoints
+    for(i_tsne in 1:nrow(data)){
+      for(j_tsne in 1:ntsne){
+        kod_tsne=mean(total_res[,i_tsne]==total_res[,tsneknn$nn_index[i_tsne,j_tsne]],na.rm = TRUE)
+        tsneknn$distances[i_tsne,j_tsne]=tsneknn$distances[i_tsne,j_tsne]/kod_tsne
+      }
+
+      oo_tsne=order(tsneknn$distance[i_tsne,])
+      tsneknn$distances[i_tsne,]=tsneknn$distances[i_tsne,oo_tsne]
+      tsneknn$nn_index[i_tsne,]=tsneknn$nn_index[i_tsne,oo_tsne]
+    }
+
+    res_tsne=Rtsne_neighbors(tsneknn$nn_index,tsneknn$distances,perplexity = perplexity)
+    scores=res_tsne$Y
+    #res_tsne=within(res_tsne, rm(Y))
+    res_tsne=res_tsne[names(res_tsne)!="Y"]
+    colnames(scores)[1:2]=c("First Component","Second Component")
+    rownames(scores)=rownames(data)
+    #   attr(dist.proj,"landmark_ix")=landpoints
+    
+    #    pp=cmdscale_landmarks(dist.proj)
+    
+    #    mam=dist.proj
+    
+  }else{
+    #    mimi=min(mam[mam!=0],na.rm = TRUE)
+    #    pp_landpoints=cmdscale(mam) #samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
+    #    pp=pp_landpoints
+    tsneknn=list()
+    tsneknn$nn_index=matrix(ncol=ncol(mam),nrow=nrow(mam))
+    for(i_tsne in 1:nrow(data)){
+      oo_tsne=order(mam[i_tsne,])
+      mam[i_tsne,]=mam[i_tsne,oo_tsne]
+      tsneknn$nn_index[i_tsne,]=oo_tsne
+    }
+    
+    tsneknn$nn_index=tsneknn$nn_index[,-1][,1:ntsne]
+    tsneknn$distances=mam[,-1][,1:ntsne]
+    
+    res_tsne=Rtsne_neighbors(tsneknn$nn_index,tsneknn$distances,perplexity = perplexity)
+    scores=res_tsne$Y
+    #res_tsne=within(res_tsne, rm(Y))
+    res_tsne=res_tsne[names(res_tsne)!="Y"]
+    colnames(scores)[1:2]=c("First Component","Second Component")
+    rownames(scores)=rownames(Xdata_landpoints)
+    
+    
+    
     total_res=res
   }
   
   
   return(list(dissimilarity = mam,
-              pp=pp,
-              acc = accu, proximity = prox, 
+              scores=scores,
+              res_tsne=res_tsne,
+              acc = accu, proximity = ma, 
               v = vect_acc, res = total_res, 
               data = Xdata_landpoints, 
               f.par = f.par,entropy=H,
-              landpoints=landpoints))
+              landpoints=landpoints,
+              tsneknn=tsneknn))
 }
-  
-  
-  
+
+
 
 
 
@@ -697,7 +739,9 @@ pls.double.cv = function(Xdata,
                          times=100,
                          runn=10){
 
-  
+  if(sum(is.na(Xdata))>0) {
+    stop("Missing values are present")
+  } 
   scal=pmatch(scaling,c("centering","autoscaling"))[1]
   optim=as.numeric(optim)
   Xdata=as.matrix(Xdata)
@@ -1077,93 +1121,3 @@ frequency_matching = function(data,label,times=5,seed=1234){
 
 
 
-
-
-
-vis.KODAMA =
-  function (data, res, landmarks = 1000, epsilon = 0.05, knnsampling = FALSE,dims=2) 
-  {
-    
-    if(any(is.na(res))){
-      landpoints=which(is.na(colSums(res)))
-      landmarks=length(landpoints)
-    }else{
-      
-      landmarks=min(landmarks,nrow(data))
-      LMARK= FALSE
-      if(landmarks<nrow(data)) LMARK =TRUE
-      
-      if(knnsampling){
-        landpoints = sort(knnsampling(data, landmarks))
-      }else{
-        landpoints = sort(sample(nrow(data), landmarks))
-      }
-    }
-    
-    
-    nsample=ncol(res)
-    M=nrow(res)
-    Tdata = data[-landpoints, , drop = FALSE]
-    Xdata = data[landpoints, , drop = FALSE]
-    Xdata_landpoints = Xdata
-    vect_proj = res[,-landpoints]
-    vect_landpoints = res[,landpoints]
-    
-    
-    nva = ncol(Xdata)
-    nsa = nrow(Xdata)
-    
-    
-    ma = matrix(0, ncol = nsa, nrow = nsa)
-    normalization = matrix(0, ncol = nsa, nrow = nsa)
-    ####################################
-    for(i in 1:M){
-      clbest = vect_landpoints[i,]
-      
-      uni = unique(clbest)
-      nun = length(uni)
-      for (ii in 1:nun) {
-        sel=which(clbest == uni[ii])
-        ma[sel,sel] = ma[sel,sel] + 1
-      }
-      sel2=!is.na(clbest)
-      normalization[sel2,sel2] = normalization[sel2,sel2] + 1
-    }
-    ###########################
-    ma = ma/normalization
-    Edist = as.matrix(dist(Xdata_landpoints))
-    ma[ma < epsilon] = 0
-    
-    mam = (1/ma) * Edist
-    mam[is.na(mam)] <- .Machine$double.xmax
-    mam[is.infinite(mam) & mam > 0] <- .Machine$double.xmax
-    mam = floyd(mam)
-    mam[mam == .Machine$double.xmax] <- NA
-    prox = Edist/mam
-    diag(prox) = 1
-    prox[is.na(prox)] = 0
-    maxvalue = max(mam, na.rm = TRUE)
-    mam[is.na(mam)] = maxvalue
-    mam = as.dist(mam)
-    
-    if (LMARK) {
-      pp = matrix(nrow = nsample, ncol = dims)
-      mimi = min(mam[mam != 0], na.rm = TRUE)
-      pp_landpoints = samm((mam + runif(length(mam)) * mimi/1e+06), 
-                           k = dims)$points
-      pr = another(pp_landpoints, Xdata_landpoints, Tdata, 
-                   vect_landpoints, vect_proj, epsilon)
-      pp[landpoints, ] = pp_landpoints
-      pp[-landpoints, ] = pr$pp
-      
-    }  else {
-      mimi = min(mam[mam != 0], na.rm = T)
-      pp_landpoints = samm((mam + runif(length(mam)) * mimi/1e+06), 
-                           k = dims)$points
-      pp = pp_landpoints
-      
-    }
-    pp
-  }
-
- 

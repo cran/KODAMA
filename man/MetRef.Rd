@@ -43,13 +43,13 @@ u=normalization(u)$newXtrain
 u=scaling(u)$newXtrain
 class=as.numeric(as.factor(MetRef$gender))
 cc= pca(u)$x
-plot(cc,pch=21,bg=class,xlab="First Component",ylab="Second Component")
+plot(cc,pch=21,bg=class)
 
 class=as.numeric(as.factor(MetRef$donor))
-plot(cc,pch=21,bg=rainbow(22)[class],xlab="First Component",ylab="Second Component")
+plot(cc,pch=21,bg=rainbow(22)[class])
 
 kk=KODAMA(u)
-plot(kk$pp,pch=21,bg=rainbow(22)[class],xlab="First Component",ylab="Second Component")
+plot(kk$scores,pch=21,bg=rainbow(22)[class])
 
 
 }

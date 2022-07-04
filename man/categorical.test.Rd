@@ -7,18 +7,19 @@
 \description{Summarization of the categorical information.}
 
 \usage{
-categorical.test (name,x,y)
+categorical.test (name,x,y,total.column=FALSE)
 }
 
 \arguments{
   \item{name}{the name of the feature.}
   \item{x}{the information to summarize.}
   \item{y}{the classification of the cohort.}
+  \item{total.column}{option to visualize the total (by default = "\code{FALSE}")}
 
 }
 
 \value{
-    The function returns a list containing a table with the summarized information and The p-value computated using the Fisher's test.
+    The function returns a table with the summarized information and The p-value computated using the Fisher's test.
   }
 \references{
 Cacciatore S, Luchinat C, Tenori L	\cr
@@ -43,13 +44,12 @@ GS=clinical[,"Gleason score"]
 BMI=clinical[,"BMI"]
 age=clinical[,"Age"]
 
-A=categorical.test("Gender",gender,hosp)$text
-B=categorical.test("Gleason score",GS,hosp)$text
+A=categorical.test("Gender",gender,hosp)
+B=categorical.test("Gleason score",GS,hosp)
 
-C=continuous.test("BMI",BMI,hosp,digits=2,pos=2,logchange = FALSE)$text
-D=continuous.test("Age",age,hosp,digits=1,pos=2,logchange = FALSE)$text
+C=continuous.test("BMI",BMI,hosp,digits=2)
+D=continuous.test("Age",age,hosp,digits=1)
 
-rbind(A,B,C,D)
 rbind(A,B,C,D)
 
 
