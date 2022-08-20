@@ -20,8 +20,8 @@ importFrom("minerva", "mine")
 importFrom("Rtsne", "Rtsne_neighbors")
 
 exportPattern(floyd,another,samm,
-              vis.KODAMA,KODAMA,k.test,loads,
-              mcplot,sammon_cpp,core_cpp,floyd,
+              KODAMA,k.test,loads,
+              mcplot,core_cpp,floyd,
               pls.double.cv,knn.double.cv,knn.kodama,
               pls.kodama,dinisurface,helicoid,spirals,
               swissroll,normalization,scaling,

@@ -63,7 +63,7 @@ u=as.matrix(iris[,-5])
 s=sample(1:150,150,TRUE)
 
 # The maximization of the accuracy of the vector s is performed
-results=core_cpp(u, clbest=s,fpar = 10)
+results=core_cpp(u, clbest=s,fpar = 5)
 
 
 print(as.numeric(results$clbest))

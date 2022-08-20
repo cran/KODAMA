@@ -23,40 +23,49 @@ txtsummary = function (x, digits = 0, scientific = FALSE, range=c("IQR","95%CI")
 }
 
 
-multi_analysis = function (data, 
-                           y, 
-                           FUN=c("continuous.test","correlation.test"), ...) 
-{
-  
-  matchFUN = pmatch(FUN[1], c("continuous.test", "correlation.test"))
-  if (is.na(matchFUN)) 
-    stop("The function to be considered must be  \"continuous.test\" or \"correlation.test\".")
-  
-  if(matchFUN==1){
-    FUN=continuous.test
-  }
-  if(matchFUN==2){
-    FUN=correlation.test
-  }
-  
-  da = NULL
-  pval = NULL
-  for (i in 1:ncol(data)) {
-    sel.na=!is.na(data[, i])
-    if(sum(sel.na)>5){
-      temp = FUN(name = colnames(data)[i], x = data[sel.na, i], y = y[sel.na], ...)
-      da = rbind(da, temp$text)
-      pval[i] = temp$p.value
-    }else{
-      da = rbind(da, c(colnames(data)[i],NA,NA))
-      pval[i] = NA
+multi_analysis =
+  function (data, y, FUN = c("continuous.test", "correlation.test"), 
+            ...) 
+  {
+    matchFUN = pmatch(FUN[1], c("continuous.test", "correlation.test"))
+    if (is.na(matchFUN)) 
+      stop("The function to be considered must be  \"continuous.test\" or \"correlation.test\".")
+    if (matchFUN == 1) {
+      FUN = continuous.test
     }
+    if (matchFUN == 2) {
+      FUN = correlation.test
+    }
+    da = NULL
+    pval = NULL
+    for (i in 1:ncol(data)) {
+      sel.na = !is.na(data[, i])
+      if (sum(sel.na) > 5) {
+        temp = FUN(name = colnames(data)[i], x = data[sel.na,i], y = y[sel.na], ...)
+        da = rbind(da, temp)
+        pval[i] = attr(temp,"p-value")
+      }
+      else {
+        if (matchFUN == 1) {
+          da = rbind(da, c(colnames(data)[i], NA, NA,NA,NA))
+        }
+        if (matchFUN == 2) {
+          da = rbind(da, c(colnames(data)[i], NA, NA))
+        }
+        
+        pval[i] = NA
+      }
+    }
+    FDR = p.adjust(pval, method = "fdr")
+    FDR = format(FDR, digits = 3, scientific = TRUE)
+    da = cbind(da, FDR)
+    da
   }
-  FDR = p.adjust(pval, method = "fdr")
-  FDR = format(FDR, digits = 3, scientific = TRUE)
-  da = cbind(da, FDR)
-  da
-}
+
+
+
+
+
 #-----for numerical data 
 
 continuous.test = function (name,
@@ -86,7 +95,7 @@ continuous.test = function (name,
   v[1, 1] = name
   if (nn == 2) {
     if(matchFUN==1){    
-      pval = wilcox.test(x ~ y,...)$p.value
+      pval = wilcox.test(x ~ y,exact = FALSE,...)$p.value
     }    
     if(matchFUN==2){    
       pval = t.test(x~y,...)$p.value
@@ -269,9 +278,11 @@ KODAMA=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
   ceiling(nrow(x) * 0.75)
 }, bagging = FALSE, FUN = c("PLS-DA","KNN"), f.par = 5, 
 W = NULL, constrain = NULL, fix=NULL, 
-epsilon = 0.05,dims=2,landmarks=1000, perplexity=30, ...) 
+epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)), ...) 
 {
-  
+  if(perplexity>floor(nrow(data)/3)){
+    stop("Perplexity is too large for the number of samples")
+  }
   if(sum(is.na(data))>0) {
     stop("Missing values are present")
   } 
