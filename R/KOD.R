@@ -161,7 +161,7 @@ continuous.test = function (name,
 
 #-----for categorical data 
 categorical.test = 
-  function (name, x, y,total.column=FALSE) 
+  function (name, x, y,total.column=FALSE,...) 
   {
     y = as.factor(y)
     nn = length(levels(y))
@@ -177,7 +177,7 @@ categorical.test =
       v[nn + 3] = ""
     }
     else {
-      p.value = fisher.test(t0, workspace = 10^7)$p.value
+      p.value = fisher.test(t0, workspace = 10^7,...)$p.value
       v[nn + 3] = format(p.value, digits = 3, scientific = TRUE)
     }
     v[1] = name
@@ -278,9 +278,9 @@ KODAMA=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
   ceiling(nrow(x) * 0.75)
 }, bagging = FALSE, FUN = c("PLS-DA","KNN"), f.par = 5, 
 W = NULL, constrain = NULL, fix=NULL, 
-epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)), ...) 
+epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)-1), ...) 
 {
-  if(perplexity>floor(nrow(data)/3)){
+  if(perplexity>(floor(nrow(data)/3)-1)){
     stop("Perplexity is too large for the number of samples")
   }
   if(sum(is.na(data))>0) {

@@ -7,14 +7,15 @@
 \description{Summarization of the categorical information.}
 
 \usage{
-categorical.test (name,x,y,total.column=FALSE)
+categorical.test (name,x,y,total.column=FALSE,...)
 }
 
 \arguments{
   \item{name}{the name of the feature.}
   \item{x}{the information to summarize.}
   \item{y}{the classification of the cohort.}
-  \item{total.column}{option to visualize the total (by default = "\code{FALSE}")}
+  \item{total.column}{option to visualize the total (by default = "\code{FALSE}").}
+    \item{...}{further arguments to be passed to the function.}
 
 }
 

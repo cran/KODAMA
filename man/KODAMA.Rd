@@ -22,7 +22,7 @@ KODAMA(data,
         epsilon = 0.05,
         dims=2,
         landmarks=1000,
-        perplexity=min(30,floor(nrow(data)/3)), ...)
+        perplexity=min(30,floor(nrow(data)/3)-1), ...)
 }
 
 \arguments{
