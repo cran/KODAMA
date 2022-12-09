@@ -373,7 +373,6 @@ arma::ivec KNNCV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
 
 
 
-
 arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) {
   
   // n <-dim(Xtrain)[1]
@@ -456,15 +455,16 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
   for (int a=0; a<ncomp; a++) {
     //qq<-svd(S)$v[,1]
     //rr <- S%*%qq    
-    
+
     svd_econ(svd_U,svd_s,svd_V,S,"left");
+
+
     rr=svd_U.col( 0 );
- 
+
     // tt<-scale(X%*%rr,scale=FALSE)
     tt=X*rr; 
     arma::mat mtt=mean(tt,0);
     tt.each_row()-=mtt;
-    
     //tnorm<-sqrt(sum(tt*tt))
     double tnorm=sqrt(sum(sum(tt%tt)));
     
@@ -480,7 +480,7 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
     // qq <- crossprod(Y,tt)
     qq=trans(Y)*tt;
     
-    
+
     //uu <- Y%*%qq
     uu=Y*qq;
     
@@ -508,10 +508,10 @@ arma::mat pred_pls(arma::mat Xtrain,arma::mat Ytrain,arma::mat Xtest,int ncomp) 
     QQ.col(a)=qq;
     VV.col(a)=vv;
     UU.col(a)=uu;
-
     B.slice(a)=RR*trans(QQ);
 
     Ypred.slice(a)=Xtest*B.slice(a);
+
   } 
   for (int a=0; a<ncomp; a++) {
     arma::mat temp1=Ypred.slice(a);
@@ -586,9 +586,9 @@ arma::ivec PLSDACV(arma::mat x,arma::ivec cl,arma::ivec constrain,int k) {
       Ytrain=clmatrix.rows(w9);
       
       
-      
+
       Ytest.rows(w1)=pred_pls(Xtrain,Ytrain,Xtest,k);
-      
+
       
       
     }else{
@@ -1518,12 +1518,8 @@ List corecpp(arma::mat x,
              bool shake,
              int proj) {
   
-
-  
   arma::ivec cvpred=clbest;
   arma::ivec cvpredbest;
-
-  
 
   if(FUN==1){
     cvpredbest=KNNCV(x,clbest,constrain,fpar);
@@ -1593,7 +1589,8 @@ List corecpp(arma::mat x,
       cvpred=KNNCV(x,cl,constrain,fpar);
     }
     if(FUN==2){
-      cvpred=PLSDACV(x,cl,constrain,fpar);      
+
+      cvpred=PLSDACV(x,cl,constrain,fpar);  
     }
     double accTOT= accuracy(cl,cvpred);
     if (accTOT > accbest) {
@@ -1602,15 +1599,12 @@ List corecpp(arma::mat x,
       accbest = accTOT;
     }
     
-    
-
     vect_acc[j-1] = accbest;  //Cambiato da vect_acc[j] = accbest;
     if (accTOT == 1) 
       success = TRUE;
   }
   
-  
-  
+
   arma::vec vect_acc2(Tcycle);
   vect_acc2.fill(0);
   for(int ii=0;ii<Tcycle;ii++){
@@ -1631,7 +1625,6 @@ List corecpp(arma::mat x,
     if(FUN==2){
       arma::mat lcm=transformy(clbest);
       projmat=pred_pls(x,lcm,xTdata,fpar);
-      
       //min_val is modified to avoid a warning
       double min_val=0;
       min_val++;

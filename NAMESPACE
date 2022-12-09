@@ -18,8 +18,10 @@ importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("stats", "aov", "summary.aov", "t.test", "p.adjust", "fisher.test", "prcomp","aggregate","quantile", "wilcox.test","cmdscale", "as.dist", "dist", "kmeans", "kruskal.test","median", "pnorm", "rnorm", "runif", "sd", "var","cor.test")
 importFrom("minerva", "mine")
 importFrom("Rtsne", "Rtsne_neighbors")
+importFrom("umap", "umap.knn", "umap")
 
-exportPattern(floyd,another,samm,
+
+exportPattern(floyd,another,
               KODAMA,k.test,loads,
               mcplot,core_cpp,floyd,
               pls.double.cv,knn.double.cv,knn.kodama,

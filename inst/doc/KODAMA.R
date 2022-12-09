@@ -1,6 +1,3 @@
-## ---- echo=FALSE--------------------------------------------------------------
-library("KODAMA")
-
 ## ---- echo=FALSE, results='asis'----------------------------------------------
 knitr::kable(matrix(ncol=3,c("kNN","kNN","kNN","PLS-DA","PLS-DA","PLS-DA",2,5,10,2,3,4,9.371,9.362,9.381,9.976,9.933,9.977),dimnames = list(NULL,c("Classifier","parameter","Entropy"))))
 

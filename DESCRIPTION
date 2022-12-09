@@ -1,6 +1,6 @@
 Package: KODAMA
-Version: 2.2
-Date: 2022-08-31
+Version: 2.3
+Date: 2022-12-9
 Authors@R: c(person("Stefano", "Cacciatore", role = c("aut", "trl", "cre"),email = "tkcaccia@gmail.com", comment = c(ORCID = "0000-0001-7052-7156")),
              person("Leonardo", "Tenori", role = "aut",email = "tenori@cerm.unifi.it", comment = c(ORCID = "0000-0001-6438-059X")))
 Maintainer: Stefano Cacciatore <tkcaccia@gmail.com>
@@ -10,17 +10,17 @@ Description: An unsupervised and semi-supervised learning algorithm that perform
   groups on all samples in a data set. Based on Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA. 
   (2017) Bioinformatics <doi:10.1093/bioinformatics/btw705> and Cacciatore S, Luchinat C, Tenori L. (2014) 
   Proc Natl Acad Sci USA <doi:10.1073/pnas.1220873111>.
-Depends: R (>= 2.10.0), stats, minerva, Rtsne
+Depends: R (>= 2.10.0), stats, minerva, Rtsne, umap
 Imports: Rcpp (>= 0.12.4)
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: rgl, knitr, rmarkdown
 VignetteBuilder: knitr
 SuggestsNote: No suggestions
 License: GPL (>= 2)
-Packaged: 2022-08-31 14:49:32 UTC; user
+Packaged: 2022-12-09 10:35:42 UTC; user
 NeedsCompilation: yes
 Repository: CRAN
 Author: Stefano Cacciatore [aut, trl, cre]
     (<https://orcid.org/0000-0001-7052-7156>),
   Leonardo Tenori [aut] (<https://orcid.org/0000-0001-6438-059X>)
-Date/Publication: 2022-09-01 09:10:54 UTC
+Date/Publication: 2022-12-09 11:42:38 UTC

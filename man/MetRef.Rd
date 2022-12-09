@@ -48,8 +48,9 @@ plot(cc,pch=21,bg=class)
 class=as.numeric(as.factor(MetRef$donor))
 plot(cc,pch=21,bg=rainbow(22)[class])
 
-kk=KODAMA(u)
-plot(kk$scores,pch=21,bg=rainbow(22)[class])
+kk=KODAMA.matrix(u)
+cc=KODAMA.visualization(kk,"t-SNE")
+plot(cc,pch=21,bg=rainbow(22)[class])
 
 
 }

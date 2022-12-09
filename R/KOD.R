@@ -270,19 +270,15 @@ pca = function(x,...){
 
 
 
-
-
-KODAMA=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
+KODAMA.matrix=function (data, M = 100, Tcycle = 20, FUN_VAR = function(x) {
   ceiling(ncol(x))
 }, FUN_SAM = function(x) {
   ceiling(nrow(x) * 0.75)
 }, bagging = FALSE, FUN = c("PLS-DA","KNN"), f.par = 5, 
 W = NULL, constrain = NULL, fix=NULL, 
-epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)-1), ...) 
+epsilon = 0.05,dims=2,landmarks=1000,neighbors=min(c(landmarks,nrow(data)))-1) 
 {
-  if(perplexity>(floor(nrow(data)/3)-1)){
-    stop("Perplexity is too large for the number of samples")
-  }
+
   if(sum(is.na(data))>0) {
     stop("Missing values are present")
   } 
@@ -349,6 +345,11 @@ epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)-1), 
   normalization = matrix(0, ncol = nsa, nrow = nsa)
   FUN_VAR = FUN_VAR(Xdata)
   FUN_SAM = FUN_SAM(Xdata)
+  
+  if(f.par>FUN_VAR & FUN[1]=="PLS-DA") {
+    message("The number of components selected for PLS-DA is too high and it will be automatically reduced to ",FUN_VAR)
+    f.par=FUN_VAR
+  }
   vect_acc = matrix(NA,nrow = M, ncol = Tcycle)
   
   accu = NULL
@@ -544,7 +545,16 @@ epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)-1), 
   yy=yy[!is.na(yy)]
   yy=yy/sum(yy)
   H=-sum(ifelse(yy>0,yy*log(yy),0))
-  ntsne=min(round(perplexity)*3,nrow(data)-1)
+  
+  
+  
+  
+  
+  
+  dissimilarity = mam
+  
+  
+  
   if(LMARK){
     
     total_res=matrix(nrow=M,ncol=nsample)
@@ -553,73 +563,85 @@ epsilon = 0.05,dims=2,landmarks=1000, perplexity=min(30,floor(nrow(data)/3)-1), 
     
   
     
-    tsneknn=knn_Armadillo(data,data,ntsne+1)
-    tsneknn$distances=tsneknn$distances[,-1]
-    tsneknn$nn_index=tsneknn$nn_index[,-1]
+    knn_Armadillo=knn_Armadillo(data,data,neighbors+1)
+    knn_Armadillo$distances=knn_Armadillo$distances[,-1]
+    knn_Armadillo$nn_index=knn_Armadillo$nn_index[,-1]
 
     for(i_tsne in 1:nrow(data)){
-      for(j_tsne in 1:ntsne){
-        kod_tsne=mean(total_res[,i_tsne]==total_res[,tsneknn$nn_index[i_tsne,j_tsne]],na.rm = TRUE)
-        tsneknn$distances[i_tsne,j_tsne]=tsneknn$distances[i_tsne,j_tsne]/kod_tsne
+      for(j_tsne in 1:neighbors){
+        kod_tsne=mean(total_res[,i_tsne]==total_res[,knn_Armadillo$nn_index[i_tsne,j_tsne]],na.rm = TRUE)
+        knn_Armadillo$distances[i_tsne,j_tsne]=knn_Armadillo$distances[i_tsne,j_tsne]/kod_tsne
       }
 
-      oo_tsne=order(tsneknn$distance[i_tsne,])
-      tsneknn$distances[i_tsne,]=tsneknn$distances[i_tsne,oo_tsne]
-      tsneknn$nn_index[i_tsne,]=tsneknn$nn_index[i_tsne,oo_tsne]
+      oo_tsne=order(knn_Armadillo$distance[i_tsne,])
+      knn_Armadillo$distances[i_tsne,]=knn_Armadillo$distances[i_tsne,oo_tsne]
+      knn_Armadillo$nn_index[i_tsne,]=knn_Armadillo$nn_index[i_tsne,oo_tsne]
     }
 
-    res_tsne=Rtsne_neighbors(tsneknn$nn_index,tsneknn$distances,perplexity = perplexity)
-    scores=res_tsne$Y
-    #res_tsne=within(res_tsne, rm(Y))
-    res_tsne=res_tsne[names(res_tsne)!="Y"]
-    colnames(scores)[1:2]=c("First Component","Second Component")
-    rownames(scores)=rownames(data)
-    #   attr(dist.proj,"landmark_ix")=landpoints
-    
-    #    pp=cmdscale_landmarks(dist.proj)
-    
-    #    mam=dist.proj
+  
     
   }else{
     #    mimi=min(mam[mam!=0],na.rm = TRUE)
     #    pp_landpoints=cmdscale(mam) #samm((mam+runif(length(mam))*mimi/1e6),k=dims)$points #
     #    pp=pp_landpoints
-    tsneknn=list()
-    tsneknn$nn_index=matrix(ncol=ncol(mam),nrow=nrow(mam))
+    
+    knn_Armadillo=list()
+    knn_Armadillo$nn_index=matrix(ncol=ncol(mam),nrow=nrow(mam))
     for(i_tsne in 1:nrow(data)){
       oo_tsne=order(mam[i_tsne,])
       mam[i_tsne,]=mam[i_tsne,oo_tsne]
-      tsneknn$nn_index[i_tsne,]=oo_tsne
+      knn_Armadillo$nn_index[i_tsne,]=oo_tsne
     }
     
-    tsneknn$nn_index=tsneknn$nn_index[,-1][,1:ntsne]
-    tsneknn$distances=mam[,-1][,1:ntsne]
-    
-    res_tsne=Rtsne_neighbors(tsneknn$nn_index,tsneknn$distances,perplexity = perplexity)
-    scores=res_tsne$Y
-    #res_tsne=within(res_tsne, rm(Y))
-    res_tsne=res_tsne[names(res_tsne)!="Y"]
-    colnames(scores)[1:2]=c("First Component","Second Component")
-    rownames(scores)=rownames(Xdata_landpoints)
+    knn_Armadillo$nn_index=knn_Armadillo$nn_index[,-1][,1:neighbors]
+    knn_Armadillo$distances=mam[,-1][,1:neighbors]
     
     
     
     total_res=res
   }
+  knn_Armadillo$neighbors=neighbors
   
-  
-  return(list(dissimilarity = mam,
-              scores=scores,
-              res_tsne=res_tsne,
+  return(list(dissimilarity = dissimilarity,
               acc = accu, proximity = ma, 
               v = vect_acc, res = total_res, 
               data = Xdata_landpoints, 
               f.par = f.par,entropy=H,
               landpoints=landpoints,
-              tsneknn=tsneknn))
+              knn_Armadillo=knn_Armadillo,data))
 }
 
 
+KODAMA.visualization=function(kk,method=c("t-SNE","MDS","UMAP"),perplexity=min(30,floor((kk$knn_Armadillo$neighbors+1)/3)-1), ...){
+  
+  mat=c("t-SNE","MDS","UMAP")[pmatch(method,c("t-SNE","MDS","UMAP"))[1]]
+  if(mat=="t-SNE"){ 
+    if(perplexity>(floor(nrow(kk$data)/3)-1)){
+      stop("Perplexity is too large for the number of samples")
+    }
+    if(perplexity>(floor((kk$knn_Armadillo$neighbors+1)/3)-1)){
+      stop("Perplexity is too large for the distance matrix created. Please, increase the number of neighbors")
+    }
+    
+    ntsne=min(round(perplexity)*3,nrow(kk$data)-1)
+    res_tsne=Rtsne_neighbors(kk$knn_Armadillo$nn_index,kk$knn_Armadillo$distances,perplexity = perplexity)
+  dimensions=res_tsne$Y
+  #res_tsne=within(res_tsne, rm(Y))
+  res_tsne=res_tsne[names(res_tsne)!="Y"]
+  }
+  if(mat=="MDS"){ 
+    dimensions=cmdscale(kk$dissimilarity)
+
+  }
+  if(mat=="UMAP"){ 
+    u=umap.knn(kk$knn_Armadillo$nn_index,kk$knn_Armadillo$distances)
+    umap.defaults$knn=u
+    dimensions = umap(kk$data,knn=u)$layout
+  }
+  colnames(dimensions)[1:2]=c("First Dimension","Second Dimension")
+  rownames(dimensions)=rownames(kk$data)
+  dimensions 
+}
 
 
 

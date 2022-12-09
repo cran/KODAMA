@@ -1,6 +1,6 @@
 ---
 title: "Knowledge Discovery by Accuracy Maximization"
-author: "Stefano Cacciatore , Leonardo Tenori, Claudio Luchinat, Phillip R. Bennet and David A. MacIntyre"
+author: "Stefano Cacciatore, Leonardo Tenori"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
@@ -48,9 +48,7 @@ All versions downloadable from CRAN have been built using R version, R.3.2.3. Th
 
 To load the package, enter the following instruction in your R session:
 
-```{r, echo=FALSE}
-library("KODAMA")
-```
+    library("KODAMA")
 
 If this command terminates without any error messages, you can be sure that the package has been installed successfully. The KODAMA package is now ready for use.
 
@@ -128,7 +126,7 @@ The function `spirals` computes the Spirals dataset of a given sample size. The 
 \begin{figure}[h]
   \centerline{\includegraphics[width=8cm]{spirals_new.pdf}}
   \caption{Four different two dimensional Spirals datasets.}
-  \label{fig:lle}
+  \label{fig:spirals_new}
 \end{figure}
 
  \newpage
@@ -158,13 +156,14 @@ We suggest KODAMA is first tested with the Iris dataset using the default parame
     data(iris)
     data=iris[,-5]
     labels=iris[,5]
-    kodama_knn_5=KODAMA(data,FUN="KNN",f.par = 2)
-    plot(kodama_knn_2$scores,pch=21,bg=as.numeric(labels)+1, xlab="First component", ylab="Second component")
+    kodama_knn_5=KODAMA.matrix(data,FUN="KNN",f.par = 2)
+    cc=KODAMA.visualization(kk,"t-SNE")
+    plot(cc,pch=21,bg=as.numeric(labels)+1)
 
 \begin{figure}[h]
   \centerline{\includegraphics[width=8cm]{iris_knn_5.pdf}}
   \caption{KODAMA on the Iris dataset.}
-  \label{fig:lle}
+  \label{fig:iris_knn_5}
 \end{figure}
 
  \newpage
@@ -182,7 +181,7 @@ The `mcplot` function can be used to extract the values of cross-validated accur
 \begin{figure}[h]
   \centerline{\includegraphics[width=8cm]{mcplot.pdf}}
   \caption{Cross-validated accuracy.}
-  \label{fig:lle}
+  \label{fig:mcplot}
 \end{figure}
 
 
@@ -194,12 +193,18 @@ KODAMA can be run with different input settings. The two different classifiers, 
 
 
 
-    kodama_knn_2 =KODAMA(data,FUN="KNN",f.par=2)
-    kodama_knn_5 =KODAMA(data,FUN="KNN",f.par=5)
-    kodama_knn_10=KODAMA(data,FUN="KNN",f.par=10)
-    kodama_pls_2 =KODAMA(data,FUN="PLS-DA",f.par=2)
-    kodama_pls_3 =KODAMA(data,FUN="PLS-DA",f.par=3)
-    kodama_pls_4 =KODAMA(data,FUN="PLS-DA",f.par=4)
+    kodama_knn_2 =KODAMA.matrix(data,FUN="KNN",f.par=2)
+    cc_knn_2=KODAMA.visualization(kodama_knn_2,"t-SNE")
+    kodama_knn_5 =KODAMA.matrix(data,FUN="KNN",f.par=5)
+    cc_knn_5=KODAMA.visualization(kodama_knn_5,"t-SNE")
+    kodama_knn_10=KODAMA.matrix(data,FUN="KNN",f.par=10)
+    cc_knn_10=KODAMA.visualization(kodama_knn_10,"t-SNE")
+    kodama_pls_2 =KODAMA.matrix(data,FUN="PLS-DA",f.par=2)
+    cc_pls_2=KODAMA.visualization(kodama_pls_2,"t-SNE")
+    kodama_pls_3 =KODAMA.matrix(data,FUN="PLS-DA",f.par=3)
+    cc_pls_3=KODAMA.visualization(kodama_pls_3,"t-SNE")
+    kodama_pls_4 =KODAMA.matrix(data,FUN="PLS-DA",f.par=4)
+    cc_pls_4=KODAMA.visualization(kodama_pls_4,"t-SNE")
 
 
   
@@ -207,24 +212,18 @@ After the KODAMA analyses, the different solutions can be visualized for compara
 
     
     par(mfrow=c(2,3))
-    plot(kodama_knn_2$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with kNN (k=2)")
-    plot(kodama_knn_5$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with kNN (k=5)")
-    plot(kodama_knn_10$scores,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with kNN (k=10)")
-    plot(kodama_pls_2$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with PLS (ncomp=2)")
-    plot(kodama_pls_3$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with PLS (ncomp=3)")
-    plot(kodama_pls_4$scores ,pch=21,bg=as.numeric(labels)+1,xlab="First component", 
-                         ylab="Second component",main="KODAMA with PLS (ncomp=4)")
+    plot(cc_knn_2 ,pch=21,bg=as.numeric(labels)+1,main="KODAMA with kNN (k=2)")
+    plot(cc_knn_5 ,pch=21,bg=as.numeric(labels)+1,main="KODAMA with kNN (k=5)")
+    plot(cc_knn_10,pch=21,bg=as.numeric(labels)+1,main="KODAMA with kNN (k=10)")
+    plot(cc_pls_2 ,pch=21,bg=as.numeric(labels)+1,main="KODAMA with PLS (ncomp=2)")
+    plot(cc_pls_3 ,pch=21,bg=as.numeric(labels)+1,main="KODAMA with PLS (ncomp=3)")
+    plot(cc_pls_4 ,pch=21,bg=as.numeric(labels)+1,main="KODAMA with PLS (ncomp=4)")
 
 
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{iris.pdf}}
   \caption{KODAMA results obtained with different input settings.}
-  \label{fig:lle}
+  \label{fig:iris}
 \end{figure}
 
 The Shannon Entropy ($H$) (Shannon, 1948), a measure of unpredictability of information content, can be used to choose the best classifier and optimize its relative parameters. $H$ is given by:
@@ -281,18 +280,18 @@ Firstly the MetRef dataset is pre-processed. This involves removing zero values 
 KODAMA is performed using different input settings.    
     
     
-    kk1=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 2)
-    kk2=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 5)
-    kk3=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 10)
-    kk4=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 20)
-    kk5=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 50)
-    kk6=KODAMA(MetRef$data,FUN = "PLS-DA",f.par = 100)
-    kk7=KODAMA(MetRef$data,FUN = "KNN",f.par = 2)
-    kk8=KODAMA(MetRef$data,FUN = "KNN",f.par = 3)
-    kk9=KODAMA(MetRef$data,FUN = "KNN",f.par = 5)
-    kk10=KODAMA(MetRef$data,FUN = "KNN",f.par = 10)
-    kk11=KODAMA(MetRef$data,FUN = "KNN",f.par = 15)
-    kk12=KODAMA(MetRef$data,FUN = "KNN",f.par = 20)
+    kk1=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 2)
+    kk2=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 5)
+    kk3=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 10)
+    kk4=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 20)
+    kk5=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 50)
+    kk6=KODAMA.matrix(MetRef$data,FUN = "PLS-DA",f.par = 100)
+    kk7=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 2)
+    kk8=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 3)
+    kk9=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 5)
+    kk10=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 10)
+    kk11=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 15)
+    kk12=KODAMA.matrix(MetRef$data,FUN = "KNN",f.par = 20)
 
 
 
@@ -331,23 +330,20 @@ Principal Component Analysis, performed on this data set, is shown in the figure
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{pca.pdf}}
   \caption{Principal Component Analysis.}
-  \label{fig:lle}
+  \label{fig:pca}
 \end{figure}
 
 
  \newpage
   
-The result of KODAMA with PLS-DA using 100 components as the classifier is subsequently shown. The KODAMA output saved in the variable pp is calculated by applying Sammon's Non-Linear Mapping (Sammon 1969) to the KODAMA dissimilarity matrix.
-
+The result of KODAMA with PLS-DA using 100 components as the classifier is subsequently shown. The KODAMA output saved in the variable kk6 is transformed by t-SNE in a low-dimensional space.
 
  
 
-
+    cc6=KODAMA.visualization(kk6,"t-SNE")
     par(mfrow=c(1,2))
-    plot(kk6$scores,bg=rainbow(22)[donor],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kk6$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
+    plot(cc6,bg=rainbow(22)[donor],pch=21,cex=1.5)
+    plot(cc6,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,cex=1.5)
 
 
 
@@ -356,7 +352,7 @@ The result of KODAMA with PLS-DA using 100 components as the classifier is subse
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{kk1.pdf}}
   \caption{KODAMA with PLS-DA with 100 components as classifier.}
-  \label{fig:lle}
+  \label{fig:kk1}
 \end{figure}
 
 
@@ -369,19 +365,18 @@ KODAMA can also use external information to work in a semi-supervised way. Super
 In the next example, urine samples from the same donor are linked by providing class (donor) information to the algorithm before performing the iterative procedure thereby undertaking a “semi-supervised approach” to highlight otherwise hidden features. 
 
 
-    kkA=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,constrain=donor )
+    kkA=KODAMA.matrix(MetRef$data,FUN="PLS-DA",f.par = 100,constrain=donor )
+    ccA=KODAMA.visualization(kkA,"t-SNE")
     par(mfrow=c(1,2))
-    plot(kkA$scores,bg=rainbow(22)[donor],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kkA$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
+    plot(ccA,bg=rainbow(22)[donor],pch=21,cex=1.5)
+    plot(ccA,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,cex=1.5)
 
 
 
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{kk2.pdf}}
   \caption{Semi-supervised KODAMA with constrain.}
-  \label{fig:lle}
+  \label{fig:kk2}
 \end{figure}
 
 
@@ -398,12 +393,11 @@ Here, gender information for the first ten donors is provided. Color coding indi
     FIX=sample(c(TRUE,FALSE),873,T)
     inform=gender
     inform[!FIX]=NA
-    kkB=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W=inform,fix=FIX)
+    kkB=KODAMA.matrix(MetRef$data,FUN="PLS-DA",f.par = 100,W=inform,fix=FIX)
+    ccB=KODAMA.visualization(kkB,"t-SNE")
     par(mfrow=c(1,2))
-    plot(kkB$scores,bg=rainbow(22)[donor],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kkB$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
+    plot(ccB,bg=rainbow(22)[donor],pch=21,cex=1.5)
+    plot(ccB,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,cex=1.5)
 
 
 
@@ -411,7 +405,7 @@ Here, gender information for the first ten donors is provided. Color coding indi
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{kk4.pdf}}
   \caption{Semi-supervised KODAMA with fixed samples.}
-  \label{fig:lle}
+  \label{fig:kk4}
 \end{figure}
 
 
@@ -422,12 +416,11 @@ Here, information of the last two examples are provided together.
     FIX=donor>10
     inform=gender
     inform[!FIX]=NA
-    kkC=KODAMA(MetRef$data,FUN="PLS-DA",f.par = 100,W= inform,constrain=donor,fix=FIX)
+    kkC=KODAMA.matrix(MetRef$data,FUN="PLS-DA",f.par = 100,W= inform,constrain=donor,fix=FIX)
+    ccC=KODAMA.visualization(kkC,"t-SNE")
     par(mfrow=c(1,2))
-    plot(kkC$scores,bg=rainbow(22)[donor],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
-    plot(kkC$scores,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,
-         xlab="First Component", ylab="Second Component",cex=1.5)
+    plot(ccC,bg=rainbow(22)[donor],pch=21,cex=1.5)
+    plot(ccC,bg=c("#2c7ac8","#e3b80f")[gender],pch=21,cex=1.5)
 
  
 
@@ -435,7 +428,7 @@ Here, information of the last two examples are provided together.
 \begin{figure}[h]
   \centerline{\includegraphics[width=12cm]{kk5.pdf}}
   \caption{Semi-supervised KODAMA with fixed samples and constrain.}
-  \label{fig:lle}
+  \label{fig:kk5}
 \end{figure}
 
 
@@ -452,6 +445,8 @@ Here, information of the last two examples are provided together.
 
 
 ## 6  Special Notes for Users Upgrading from Previous Version
+
+Version 2.3 separate the previous function KODAMA in two distint function: KODAMA.matrix and KODAMA.visualization. The first one is to perform the KODAMA analysis. The second is to transform the KODAMA dissimilarity matrix in a low-dimensional space using t-SNE, MDS or UMAP.
 
 Version 2.0 has introduced a few novelty to the KODAMA algorithm and some small changes in the output structure of the functions. We tried to ensure backward compatibility with the previous version where possible. Sammon's Non-Linear Mapping (Sammon 1969) used in the previous version to transform the KODAMA dissimilarity matrix in a space dimensionality has been replaced by t-SNE (van der Maaten 2008) with Tree-Based implementation (van der Maaten 2014) using the Rtsne package.
 

@@ -1,28 +1,28 @@
-\name{KODAMA}
+\name{KODAMA.matrix}
 
-\alias{KODAMA}
+\alias{KODAMA.matrix}
 
 \title{Knowledge Discovery by Accuracy Maximization}
 
 \description{
-	KODAMA (KnOwledge Discovery by Accuracy MAximization) is an unsupervised and semi-supervised learning algorithm that performs feature extraction from noisy and high-dimensional data. Unlike other data mining methods, KODAMA is driven by an integrated procedure of cross validation of the results.
+	KODAMA (KnOwledge Discovery by Accuracy MAximization) is an unsupervised and semi-supervised learning algorithm that performs feature extraction from noisy and high-dimensional data. 
 }
 \usage{
-KODAMA(data, 
-        M = 100, 
-        Tcycle = 20, 
-        FUN_VAR = function(x) { ceiling(ncol(x)) },
-        FUN_SAM = function(x) { ceiling(nrow(x) * 0.75)},
-        bagging = FALSE, 
-        FUN = c("PLS-DA","KNN"), 
-        f.par = 5, 
-        W = NULL, 
-        constrain = NULL, 
-        fix=NULL, 
-        epsilon = 0.05,
-        dims=2,
-        landmarks=1000,
-        perplexity=min(30,floor(nrow(data)/3)-1), ...)
+KODAMA.matrix (data, 
+               M = 100, 
+               Tcycle = 20, 
+               FUN_VAR = function(x) {  ceiling(ncol(x)) }, 
+               FUN_SAM = function(x) {  ceiling(nrow(x) * 0.75)},
+               bagging = FALSE, 
+               FUN = c("PLS-DA","KNN"), 
+               f.par = 5,
+               W = NULL, 
+               constrain = NULL, 
+               fix=NULL, 
+               epsilon = 0.05,
+               dims=2,
+               landmarks=1000,
+               neighbors=min(c(landmarks,nrow(data)))-1) 
 }
 
 \arguments{
@@ -66,17 +66,14 @@ KODAMA(data,
       \item{landmarks}{
   number of landmarks to use.
   }
-      \item{perplexity}{
-  perplexity parameter.
-  }
-      \item{...}{
-  other parameters of t-SNE.
+      \item{neighbors}{
+  number of neighbors to include in the dissimilarity matrix yo pass to the \code{\link{KODAMA.visualization}} function.
   }
 
 }
 
 \details{
-KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, t-SNE is used to visualise the results of KODAMA dissimilarity matrix. 
+KODAMA consists of five steps. These can be in turn divided into two parts: (i) the maximization of cross-validated accuracy by an iterative process (step I and II), resulting in the construction of a proximity matrix (step III), and (ii) the definition of a dissimilarity matrix (step IV and V). The first part entails the core idea of KODAMA, that is, the partitioning of data guided by the maximization of the cross-validated accuracy. At the beginning of this part, a fraction of the total samples (defined by \code{FUN_SAM}) are randomly selected from the original data. The whole iterative process (step I-III) is repeated \code{M} times to average the effects owing to the randomness of the iterative procedure. Each time that this part is repeated, a different fraction of samples is selected. The second part aims at collecting and processing these results by constructing a dissimilarity matrix to provide a holistic view of the data while maintaining their intrinsic structure (steps IV and V). Then, \code{\link{KODAMA.visualization}} function is used to visualise the results of KODAMA dissimilarity matrix. 
 
 }
 
@@ -86,11 +83,13 @@ KODAMA consists of five steps. These can be in turn divided into two parts: (i) 
     \item{acc}{a vector with the \code{M} cross-validated accuracies.}
     \item{proximity}{a proximity matrix.}
     \item{v}{a matrix containing the all classification obtained maximizing the cross-validation accuracy.}
-    \item{scores}{a matrix containing the score of the t-SNE analysis performed on the KODAMA output.}
     \item{res}{a matrix containing all classification vectors obtained through maximizing the cross-validation accuracy.}
     \item{f.par}{parameters of the classifier..}
     \item{entropy}{Shannon's entropy of the KODAMA proximity matrix.}
     \item{landpoints}{indexes of the landmarks used.}
+    \item{data}{original data.}
+    \item{knn_Armadillo}{dissimilarity matrix used as input for the \code{\link{KODAMA.visualization}} function.}
+
     
 }
 
@@ -104,9 +103,22 @@ Knowledge discovery by accuracy maximization.\cr
 Cacciatore S, Tenori L, Luchinat C, Bennett PR, MacIntyre DA	\cr
 KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \emph{Bioinformatics} 2017;33(4):621-623. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/33/4/621/2667156}{Link}
+\cr	\cr
+L.J.P. van der Maaten and G.E. Hinton.\cr
+Visualizing High-Dimensional Data Using t-SNE. \cr
+\emph{Journal of Machine Learning Research} 9 (Nov) : 2579-2605, 2008.
+\cr	\cr
+L.J.P. van der Maaten. \cr
+Learning a Parametric Embedding by Preserving Local Structure. \cr
+\emph{In Proceedings of the Twelfth International Conference on Artificial Intelligence and Statistics (AISTATS), JMLR W&CP} 5:384-391, 2009.
+\cr	\cr
+McInnes L, Healy J, Melville J. \cr
+Umap: Uniform manifold approximation and projection for dimension reduction. \cr
+\emph{arXiv preprint}:1802.03426. 2018 Feb 9.
 }
 
 
+\seealso{\code{\link{KODAMA.visualization}}}
 
 \examples{
 \donttest{
@@ -114,8 +126,9 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
  data(iris)
  data=iris[,-5]
  labels=iris[,5]
- kk=KODAMA(data,FUN="KNN")
- plot(kk$scores,col=as.numeric(labels),cex=2)
+ kk=KODAMA.matrix(data,FUN="KNN",f.par=2)
+ cc=KODAMA.visualization(kk,"t-SNE")
+ plot(cc,col=as.numeric(labels),cex=2)
 
 }
 }

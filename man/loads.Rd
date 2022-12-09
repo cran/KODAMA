@@ -28,13 +28,13 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 \emph{Bioinformatics} 2017;33(4):621-623. doi: 10.1093/bioinformatics/btw705. \href{https://academic.oup.com/bioinformatics/article/33/4/621/2667156}{Link}
 }
 
-\seealso{\code{\link{KODAMA}}}
+\seealso{\code{\link{KODAMA.matrix}},\code{\link{KODAMA.visualization}}}
 \examples{
 \donttest{
  data(iris)
  data=iris[,-5]
  labels=iris[,5]
- kk=KODAMA(data,FUN="PLS-DA")
+ kk=KODAMA.matrix(data,FUN="PLS-DA")
  loads(kk)
 }
 }

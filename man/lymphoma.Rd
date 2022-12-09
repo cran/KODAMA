@@ -48,8 +48,10 @@ class=1+as.numeric(lymphoma$class)
 cc=pca(lymphoma$data)$x
 plot(cc,pch=21,bg=class)
 
-kk=KODAMA(lymphoma$data,perplexity = 10)
-plot(kk$scores,pch=21,bg=class)
+kk=KODAMA.matrix(lymphoma$data,perplexity = 10)
+cc=KODAMA.visualization(kk,"t-SNE")
+
+plot(cc,pch=21,bg=class)
 
 }
 }
