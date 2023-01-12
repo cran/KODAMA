@@ -36,8 +36,8 @@ KODAMA: an updated R package for knowledge discovery and data mining.	\cr
 # of USA president as shown in Cacciatore, et al. (2014)
 
 data(USA)
-kk=KODAMA.matrix(USA$data,FUN="KNN",perplexity = 10)
-cc=KODAMA.visualization(kk,"t-SNE")
+kk=KODAMA.matrix(USA$data,FUN="KNN")
+cc=KODAMA.visualization(kk,"t-SNE",perplexity = 10)
 oldpar <- par(cex=0.5,mar=c(15,6,2,2));
 plot(USA$year,cc[,1],axes=FALSE,pch=20,xlab="",ylab="First Component");
 axis(1,at=USA$year,labels=rownames(USA$data),las=2);

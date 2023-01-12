@@ -1,10 +1,10 @@
-ff72a9a9bf46870fdfe8429fea3b8a55 *DESCRIPTION
+2903de991910336611e71266fc65d1cf *DESCRIPTION
 31235f283a12dd9d2959fe0be239ec94 *NAMESPACE
-31ad80a98689ff937dc1a19dde3dd38f *R/KOD.R
+47da1d5fd5dadfaeb2761902333156b2 *R/KOD.R
 29ea88d2c94835c5a6a3749c86832238 *R/RcppExports.R
 31ce1d9ce0f3acebe4f68ddea18537b2 *R/datasets.R
 28c2505733630e1daf093a39daa011ef *R/preprocessing.R
-09572b28c5a15a1ebc1259a4c128c3c7 *build/vignette.rds
+5f649e709faed7ccfff1d3a1f9f5a971 *build/vignette.rds
 a806a37149709a199e9905da8690f167 *data/MetRef.RData
 d98f832fac862f52ac489640529c9341 *data/USA.RData
 a0c072e42eb9374438892582014295c8 *data/clinical.RData
@@ -12,12 +12,12 @@ a7b72fff94005a3a1be6793fb291ef76 *data/datalist
 a7f4917353f4aed189d3700634f05e76 *data/lymphoma.RData
 eee25caf624d18d084220fbcedc78a0f *inst/doc/KODAMA.R
 bdc32eb84db24086796b0fef1e6ae3a7 *inst/doc/KODAMA.Rmd
-3ba56e1c8c142c3b2534606d074f88a5 *inst/doc/KODAMA.pdf
+02323938a5e26e7510364736588daeed *inst/doc/KODAMA.pdf
 b518c8b094bb61de4e12786cd82b5d22 *man/KODAMA-internal.Rd
 04ccce07f09e4418ff583679cc67c3ff *man/KODAMA.matrix.Rd
 77d44950cf0c770abccb3e12aeca7357 *man/KODAMA.visualization.Rd
 e23aca30023743c3ba3d586ca97c135e *man/MetRef.Rd
-dcb2a8149f27de64d6d652e4780928ed *man/USA.Rd
+aef51bff4ed1554e5ce2e53312c4d2a2 *man/USA.Rd
 269cecbd35902b4ea2f5c6de0b3bbc4b *man/categorical.test.Rd
 533e6c65acc3cd14a5f8b41031c56588 *man/clinical.Rd
 4dd8ab744e2c33a29a7bf310264bbaf7 *man/continuous.test.Rd
@@ -31,7 +31,7 @@ bf2467b2532ef78b4ed286e311ee6019 *man/frequency_matching.Rd
 0f7bbfbd011b4ca768c83333452b3b34 *man/knn.double.cv.Rd
 fdd9b28c44e0d3d83009eccd5424e77e *man/knn.kodama.Rd
 18870388923dc4a9974c2d66232240a9 *man/loads.Rd
-1e43ad4040b9284002e7604bcfbdde1e *man/lymphoma.Rd
+9bfbbce45765b9a1e1174d7bdad0c3cc *man/lymphoma.Rd
 b95b4d38cec4dcf463c0b61bffeb1c63 *man/mcplot.Rd
 29e362c5de436bafaad4c683e586498d *man/multi_analysis.Rd
 8129af61e20b872b4fb9ad5b67fa8a3f *man/normalization.Rd

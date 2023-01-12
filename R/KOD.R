@@ -78,38 +78,36 @@ continuous.test = function (name,
 {
   
   
-  matchFUN = pmatch(method[1], c("non-parametric","parametric"))
-    
+  matchFUN = pmatch(method[1], c("non-parametric", "parametric"))
   if (matchFUN != 1 & matchFUN != 2) {
     stop("Method argument should one of \"non-parametric\",\"parametric\"")
   }
-      
-      
-  
   y = as.factor(y)
   ll = levels(y)
   A = x[y == ll[1]]
   B = x[y == ll[2]]
   nn = length(levels(y))
-  v = data.frame(matrix(nrow=1,ncol=nn+3))
+  v = data.frame(matrix(nrow = 1, ncol = nn + 3))
   v[1, 1] = name
   if (nn == 2) {
-    if(matchFUN==1){    
-      pval = wilcox.test(x ~ y,exact = FALSE,...)$p.value
-    }    
-    if(matchFUN==2){    
-      pval = t.test(x~y,...)$p.value
+    if (matchFUN == 1) {
+      pval = wilcox.test(x ~ y, exact = FALSE, ...)$p.value
     }
-    fc = -log2(mean(A, na.rm = TRUE)/mean(B, na.rm = TRUE))
+    if (matchFUN == 2) {
+      pval = t.test(x ~ y, ...)$p.value
+    }
+    if (logchange == TRUE){
+      fc = -log2(mean(A, na.rm = TRUE)/mean(B, na.rm = TRUE))
+    }
   }
   if (nn > 2) {
-    if(matchFUN==1){
-      pval = kruskal.test(x ~ y,...)$p.value
+    if (matchFUN == 1) {
+      pval = kruskal.test(x ~ y, ...)$p.value
     }
-    if(matchFUN==2){
-      pval = summary.aov(aov(x~y,...))[[1]]$`Pr(>F)`[1]
+    if (matchFUN == 2) {
+      pval = summary.aov(aov(x ~ y, ...))[[1]]$`Pr(>F)`[1]
     }
-    logchange=FALSE
+    logchange = FALSE
   }
   if (nn > 1) {
     v[1, 2:(1 + nn)] = tapply(x, y, function(x) txtsummary(x, 
@@ -120,13 +118,8 @@ continuous.test = function (name,
   else {
     v[1, nn + 3] = NA
   }
-  
-  
   matchFUN = pmatch(range[1], c("IQR", "95%CI"))
-  
-  
-  if(pos==1){
-    
+  if (pos == 1) {
     if (matchFUN == 1) {
       names(v) = c("Feature", paste(levels(y), ", median [IQR]", 
                                     sep = ""), "Total, median [IQR]", "p-value")
@@ -135,27 +128,26 @@ continuous.test = function (name,
       names(v) = c("Feature", paste(levels(y), ", median [95%CI]", 
                                     sep = ""), "Total, median [95%CI]", "p-value")
     }
-  }else{
-    
+  }
+  else {
     if (matchFUN == 1) {
-      v[1, 1] =  paste(name, ", median [IQR]",sep = "")
+      v[1, 1] = paste(name, ", median [IQR]", sep = "")
     }
     if (matchFUN == 2) {
-      v[1, 1] = paste(name, ", median [95%CI]",sep = "")
+      v[1, 1] = paste(name, ", median [95%CI]", sep = "")
     }
-    
     names(v) = c("Feature", levels(y), "Total", "p-value")
   }
   v[v == "NA [NA NA]"] = "-"
   if (logchange == TRUE) {
-    v = cbind(v[1, 1:(nn + 2)], logchange = round(fc, digits = 2),"p-value"=v[1, (nn + 3)])
-
-    attr(v,"p-logchange")=fc
+    v = cbind(v[1, 1:(nn + 2)], logchange = round(fc, digits = 2), 
+              `p-value` = v[1, (nn + 3)])
+    attr(v, "p-logchange") = fc
   }
-  if(!total.column){
-    v=v[,-(nn+2)]
+  if (!total.column) {
+    v = v[, -(nn + 2)]
   }
-  attr(v,"p-value")=pval
+  attr(v, "p-value") = pval
   return(v)
 }
 
@@ -608,7 +600,7 @@ epsilon = 0.05,dims=2,landmarks=1000,neighbors=min(c(landmarks,nrow(data)))-1)
               data = Xdata_landpoints, 
               f.par = f.par,entropy=H,
               landpoints=landpoints,
-              knn_Armadillo=knn_Armadillo,data))
+              knn_Armadillo=knn_Armadillo,data=data))
 }
 
 
